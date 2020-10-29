@@ -354,6 +354,7 @@
                 //Agrupar las IIO del día hoy por zodi
                 iiogZodi = _.groupBy(arrIIO, "zodi_name");
                 iiogTematica = _.groupBy(arrIIO, "tematica");
+                console.log("arrIIO", arrIIO);
 
                 st_data = [];
 
@@ -480,7 +481,7 @@
                         // Hoy
                         var m_hoy = moment(new Date()).format("YYYY-MM-DD");
                         var iio_realtime = await iiodb.iio.where('disposetime').above(m_hoy).toArray();
-
+                        console.log("iiorealtime", iio_realtime);
                         cargarIIO(iio_realtime)
                         break;
                     case 'ayer':
