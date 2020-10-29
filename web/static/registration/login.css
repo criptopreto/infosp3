@@ -1,0 +1,144 @@
+@font-face{
+    font-family: 'circular-std-black';
+    src: url('../fonts/Circular Std Black.ttf');
+    font-weight: bold;
+}
+@font-face{
+    font-family: 'circular-std-book';
+    src: url('../fonts/Circular Std Book.ttf');
+}
+@font-face{
+    font-family: 'circular-std-medium';
+    src: url('../fonts/Circular Std Medium.ttf');
+}
+html{
+    height: 100%;
+    width: 100%;
+}
+body{
+    position: static;
+    width: 100%;
+    height: 100%;
+}
+
+.wrapper-login{
+    height: 100%;
+    width: 100%;
+    background-color: #E9ECE8;
+    position: static;
+}
+
+.content-login{
+    width: 100%;
+    height: 100%;
+    background-size: 100% 100%;
+    background-repeat:no-repeat;
+    background:url(../images/fondo2.jpg);
+    background-size: cover;
+    justify-content: center;
+    box-shadow: -3px 1px 6px #00000040;
+}
+
+.row {
+    height: 100%;
+    margin: 0;
+}
+
+.content-logo {
+    display: flex;
+    justify-content: center;
+    position: relative;
+    z-index: 1000;
+}
+
+#logo-login {
+    margin-right: auto;
+    margin-left: auto;
+    margin-top: auto !important;
+}
+
+.content-login::before {
+    content: '';
+    width: 100%;
+    height: 100%;
+    background-color: #ffffffb0;
+    position: absolute;
+}
+
+.content-form {
+    position: relative;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+}
+
+.login-form-control{
+    width: 100%;
+    border-radius: 6px;
+    font-size: 17px;
+    padding: 14px 16px;
+    border: 1px solid #dddfe2;
+    color: #960000;
+    line-height: 16px;
+    vertical-align: middle;
+    margin: 0;
+    box-shadow: inset 1px 1px 1px #f5f5f5;
+    font-family: 'circular-std-book';
+    background-color: #ffffffa4;
+}
+
+.login-form-control:focus{
+    outline: none !important;
+}
+
+.login-form-control::placeholder{
+    color: #CEBDBD;
+}
+
+.btn-login{
+    height: 52px;
+    background-color:#550202c9;
+    border-radius: 6px;
+    color: white;
+    font-family: 'circular-std-black';
+    font-size: 20px;
+}
+
+.btn-login:hover{
+    color: whitesmoke;
+}
+
+.content-titulo {
+    position: relative;
+    z-index: 1000;
+}
+
+h1.title {
+    font-size: 2.75vw;
+    font-family: 'circular-std-black';
+    color: #C40004;
+    text-shadow: -1px 1px 4px #7d7d7d;
+}
+
+.text-incorrect {
+    color: #960000;
+}
+
+.wrapper-form {
+    width: 385px;
+}
+
+.chavez-izquierda{
+    width: 100%;
+    height: 100%;
+    background-size: 100% 100%;
+    background-repeat:no-repeat;
+    background:url(../images/chavez.png);
+    background-size: cover;
+    justify-content: center;
+    
+}
+
+.login-link-recovery {
+    color: red;
+}

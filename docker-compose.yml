@@ -1,0 +1,54 @@
+version: '3.8'
+
+services: 
+    web:
+        restart: always
+        build: ./web/
+        command: bash -c "python manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:9000"
+        volumes:
+            - ./web:/code
+        links: 
+            - "redis:redis"
+            - "nodeapi:nodeapi"
+        ports:
+            - "9000"
+        env_file: 
+            - .env
+    nginx:
+        restart: always
+        build: ./nginx/
+        ports: 
+            - "80:80"
+        volumes_from:
+            - web
+        links: 
+            - web
+    redis:
+        restart: always
+        image: redis:latest
+        expose:
+            - "6379"
+    mongo:
+        restart: always
+        image: mongo
+        ports:
+            - "27017"
+        volumes: 
+            - mongodatas:/data/db
+    nodeapi:
+        restart: always
+        build: ./nodeapi
+        ports: 
+            - "3001:3001"
+        command: bash -c "npm start"
+        depends_on: 
+            - mongo
+            - redis
+        links: 
+            - mongo
+            - redis
+        volumes:
+            - ./nodeapi:/backend
+            - /backend/node_modules
+volumes: 
+    mongodatas:

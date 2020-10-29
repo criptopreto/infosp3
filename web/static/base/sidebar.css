@@ -1,0 +1,215 @@
+@font-face{
+    font-family: 'circular-std-black';
+    src: url('../fonts/Circular Std Black.ttf');
+    font-weight: bold;
+}
+@font-face{
+    font-family: 'circular-std-book';
+    src: url('../fonts/Circular Std Book.ttf');
+}
+@font-face{
+    font-family: 'circular-std-medium';
+    src: url('../fonts/Circular Std Medium.ttf');
+}
+@font-face{
+    font-family: 'circular-std-bold';
+    src: url('../fonts/Circular Std Bold.ttf');
+}
+
+body {
+    font-size: .875rem;
+  }
+  
+  .feather {
+    width: 16px;
+    height: 16px;
+    vertical-align: text-bottom;
+  }
+  
+  /*
+   * Sidebar
+   */
+  
+  .sidebar {
+    position: relative !important;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100; /* Behind the navbar */
+    padding: 48px 0 0; /* Height of navbar */
+  }
+  
+  @media (max-width: 767.98px) {
+    .sidebar {
+      top: 5rem;
+    }
+  }
+  
+  @media (min-width: 720px){
+    .sidebar .nav-link{
+      font-size: 16px !important;
+    }
+  }
+  
+  .sidebar-sticky {
+    position: relative;
+    top: 0;
+    height: calc(100vh - 140px);
+    padding-top: .5rem;
+  }
+  
+  @supports ((position: -webkit-sticky) or (position: sticky)) {
+    .sidebar-sticky {
+      position: -webkit-sticky;
+      position: sticky;
+    }
+  }
+  
+  .sidebar .nav-link {
+    font-weight: 500;
+    color: #333;
+  }
+  
+  .sidebar .nav-link .feather {
+    margin-right: 4px;
+    color: #999;
+  }
+  
+  .sidebar .nav-link.active {
+    color: #007bff;
+  }
+  
+  .sidebar .nav-link:hover .feather,
+  .sidebar .nav-link.active .feather {
+    color: inherit;
+  }
+  
+  .sidebar-heading {
+    font-size: .75rem;
+    text-transform: uppercase;
+  }
+  
+  /*
+   * Navbar
+   */
+  
+  .navbar-brand {
+    padding-top: .75rem;
+    padding-bottom: .75rem;
+    font-size: 1rem;
+    background-color: rgba(0, 0, 0, .25);
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .25);
+  }
+  
+  .navbar .navbar-toggler {
+    top: .25rem;
+    right: 1rem;
+  }
+  
+  .navbar .form-control {
+    padding: .75rem 1rem;
+    border-width: 0;
+    border-radius: 0;
+  }
+  
+  .form-control-dark {
+    color: #fff;
+    background-color: rgba(255, 255, 255, .1);
+    border-color: rgba(255, 255, 255, .1);
+  }
+  
+  .form-control-dark:focus {
+    border-color: transparent;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, .25);
+  }
+
+
+.sidebar {
+    top: 10px !important;
+    left: 20px !important;
+    border-radius: 15px;
+    box-shadow: 1px 1px 9px #031e0647;
+    padding: 20px 0 !important;
+}
+
+.sidebar .nav-link{
+    color: #697A62 !important;
+    font-family: 'circular-std-book';
+    font-size: 20px;
+}
+
+.nav-link.active {
+    border-radius: 25px;
+    background-color: #2C7429;
+    color: #FFF !important;
+    width: 98%;
+    position: relative;
+    z-index: 1500;
+    
+}
+
+.sidebar .nav-link{
+    margin-left: 30px;
+    margin-bottom: 10px;
+}
+
+.sidebar .nav-link.active::before{
+    content: '';
+    font-weight: bold;
+    position: absolute;
+    width: 10px;
+    height: 100%;
+    background-color: #2C7429;
+    border-radius: 25px;
+    left: -35px;
+    top: 0px;
+}
+
+.sidebar .nav-link.active::after{
+    content: '';
+    display: block;
+    position: absolute;
+    top: 17%;
+    right: 18px;
+    z-index: 2;
+    border-top: 15px solid transparent;
+    border-left: 10px solid #fff;
+    border-bottom: 15px solid transparent;
+}
+
+.sidebar .nav-link:hover:not(.active){
+    color: #37721F !important;
+    box-shadow: 0px 1px 4px #67816794;
+    border-radius: 25px;
+    background-color: #f2f8f1;
+    width: 85%;
+}
+
+.sidebar-sticky {
+    background-image: url("../images/arbol-sm.png");
+    background-repeat: no-repeat;
+    background-size: 254px 318px;
+    background-position-y: bottom;
+    background-position-x: center;
+}
+
+.sidebar-sticky::after{
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    background-color: #707070;
+    border-radius: 25px;
+    left: 0;
+    bottom: 4px;
+}
+
+.brand{
+    font-family: 'circular-std-black';
+    font-size: 3.125rem;
+    line-height: 3.1rem;
+    color: #40951B;
+    margin: 0;
+    margin-top: 10px;
+    text-shadow: 1px 1px 5px #00000078;
+}

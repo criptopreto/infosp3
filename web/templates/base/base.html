@@ -1,0 +1,43 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es-ve">
+<head>
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+    
+    <link rel="stylesheet" href="{% static 'vendor/fontawesome/css/all.min.css' %}">
+    {% comment %} <script src="https://kit.fontawesome.com/77839478fe.js" crossorigin="anonymous"></script>
+    <link href="https://kit-free.fontawesome.com/releases/latest/css/free-v4-shims.min.css" media="all" rel="stylesheet">
+    <link href="https://kit-free.fontawesome.com/releases/latest/css/free-v4-font-face.min.css" media="all" rel="stylesheet">
+    <link href="https://kit-free.fontawesome.com/releases/latest/css/free.min.css" media="all" rel="stylesheet"> {% endcomment %}
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    {% block extracss %}
+    {% endblock extracss %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SP3{% endblock title %}</title>
+</head>
+<body class="fixed-sn black-skin">
+    <div class="blocker"><div class="sbl-circ-ripple"></div></div>
+    <header>
+        {% block navbar %}
+        {% endblock navbar %}
+        {% block header %}
+        {% endblock header %}
+    </header>
+    {% block content %}{% endblock content %}
+    {% block modals %}{% endblock modals %}
+    {% block footer %}{% endblock footer %}
+    <script src="{% static 'vendor/jquery/jquery-3.5.1.min.js' %}"></script>
+    <script src="{% static 'vendor/popper/popper.min.js' %}"></script>
+    <script src="{% static 'vendor/bootstrap/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'vendor/fontawesome/js/all.min.js' %}"></script>
+    <script src="{% static 'vendor/moment/moment-with-locales.min.js' %}"></script>
+    <script>
+        moment.locale("es-ve"); 
+    </script>
+    {% block extrajs %}
+    {% endblock extrajs %}
+    {% block extrascript %}
+    {% endblock extrascript %}
+</body>
+</html>

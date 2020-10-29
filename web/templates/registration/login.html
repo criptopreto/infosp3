@@ -1,0 +1,51 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% load my_forms_tags %}
+
+{% block extracss %}
+    <link rel="stylesheet" href="{% static 'registration/login.css' %}">
+{% endblock extracss %}
+
+{% block content %}
+    <div class="wrapper-login">
+        <div class="row">
+            <div class="col-5 p-0">
+                <div class="chavez-izquierda"></div>
+            </div>
+            <div class="col-7 p-0">
+                <div class="content-login">
+                    <div class="contenido">
+                        <div class="content-titulo">
+                        <h1 class="title text-center">Sistema Popular de Protección para la Paz</h1>
+                    </div>
+                    <div class="content-logo mt-2">
+                        <img src="{% static 'images/sep.png' %}" alt="SP3" width="170em" id="logo-login" class="img-fluid mt-5">
+                    </div>
+                    <div class="content-form mt-5">
+                        <div class="wrapper-form">
+                            <form action="{% url 'login' %}" method='post' class="login-card-content">
+                                {% csrf_token %}
+                                <div class="login-form-group mb-3">
+                                    {{ form.username|add_class_placeholder:'login-form-control,Usuario'}}
+                                </div>
+                                <div class="login-form-group mb-3">
+                                    {{ form.password|add_class_placeholder:'login-form-control,Contraseña' }}
+                                </div>
+                                {% if form.errors %}
+                                    <p class="text-incorrect">El Usuario o la Contraseña son incorrectos, por favor, intente nuevamente.</p>
+                                {% endif %}
+                                <div class="login-form-group mb-2">  
+                                    <input type="submit" value="Iniciar Sesión" class="btn btn-block btn-login" />
+                                    <input type="hidden" name="next" value="{{ next }}" />     
+                                </div>
+                                <hr>
+                                <p class="text-center"><a href="{% url 'password_reset' %}" class="login-link-recovery text-center">¿Olvidaste tu Cuenta?</a></p>
+                            </form>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

@@ -1,0 +1,729 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+var debug = require('debug')('nodeapi:server');
+var http = require('http');
+const axios = require("axios");
+const fs = require('fs');
+const { stat } = require('fs');
+const iio = require("../models/iio_sgi").IIO;
+var moment = require("moment");
+const oracledb = require('oracledb');
+const EventEmmitter = require("events");
+const _ = require("lodash");
+const myEmisor = new EventEmmitter()
+moment.locale("es-ve");
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '3001');
+app.set('port', port);
+
+var cns = { 
+  user: "sep",
+  password: "smart",
+  connectString: "10.51.3.53/sep"
+}
+
+//CERRAR LA CONEXIÓN
+function close(conexion){
+  conexion.release(
+      function(err){
+        if(err){console.error(err.message)}
+      }
+  )
+}
+
+//FUNCIÓN QUE MANEJARÁ LOS ERRORES DE LA BD
+function error(err, cn){
+  if(err){
+      console.error(err.message)
+      if(cn!=null) close(cn);
+      return -1;
+  }
+  else return 0;
+}
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+const io = require('socket.io')(server);
+const redisAdapter = require("socket.io-redis");
+
+io.adapter(redisAdapter({host: 'redis', port: 6379}));
+
+io.on('connection', (socket)=>{
+  console.log("Nueva Conexion:")
+  socket.on("req_update_vpn", (data)=>{
+    get_status_vpn(socket);
+  });
+
+  io.of("/").adapter.clients((err, clients)=>{
+    console.log(clients);
+  })
+
+  socket.on("get_iio_init", ()=>{
+    console.log("Init...")
+    init_iio(socket);
+  });
+
+  //Recibimos alerta de que fue cargada una IIO desde la página del SEP
+  socket.on("add_iio_sep", datos_iio=>{
+    console.log(datos_iio);
+    add_iio(datos_iio)
+  });
+});
+
+myEmisor.on("event", datos=>{
+  io.emit("n_iio", datos)
+});
+
+setInterval(()=>{
+  get_status_vpn(io);
+  calculos_iio(io);
+}, 10000);
+
+function get_status_vpn(socket){
+  axios.get("http://10.51.3.63:8080/tgsms/resource/js/status_vpn").then(dt=>{
+      //SEPARAR CADA UNA DE LAS LINEAS DEL COMANDO NETSTAT
+      /*
+      SALIDA ESPERADA:
+      'tcp 0 0 ::ffff:10.51.3.61:28598 ::ffff:206.49.165.156:17600 ESTABLISHED
+      'tcp 0 0 ::ffff:10.51.3.61:37701 ::ffff:192.168.6.2:17601 ESTABLISHED ',
+      'tcp 0 0 ::ffff:10.51.3.61:63489 ::ffff:190.76.244.216:17600 ESTABLISHED ',
+      */
+      var dataLine = dt.data.split("\n");
+      if(dataLine){
+        var digitel = false;
+        var movistar = false;
+        var movilnet = false;
+
+        var stDigitel = "";
+        var stMovistar = "";
+        var stMovilnet = "";
+
+        var status = {};
+        for(i=0;i<dataLine.length;i++){
+          var dataSplit = dataLine[i].trim().replace("  ", " ").replace("  ", " ").split(" ");
+          if(dataSplit.length > 10){
+            for(j=0;j<dataSplit.length;j++){
+              try{
+                if(dataSplit[j].toString().includes("192.168.6.2")){movistar = true; stMovistar = dataSplit[22]};
+              }catch{}
+              try{
+                if(dataSplit[j].toString().includes("206.49.165.156")){digitel = true; stDigitel = dataSplit[19]};
+              }catch{}
+              try{
+                if(dataSplit[j].toString().includes("190.76.244.216")){movilnet = true; stMovilnet = dataSplit[19]};
+              }catch{}
+            }
+          }
+        }
+
+        status.up_movistar = movistar;
+        status.st_movistar = stMovistar;
+        status.up_digitel = digitel;
+        status.st_digitel = stDigitel;
+        status.up_movilnet = movilnet;
+        status.st_movilnet = stMovilnet
+      }
+      socket.emit("update_vpn", status);
+    }).catch(error=>{
+      var status = {};
+      status.up_movistar = false;
+      status.st_movistar = "";
+      status.up_digitel = false;
+      status.st_digitel = "";
+      status.up_movilnet = false;
+      status.st_movilnet = ""
+      socket.emit("update_vpn", status);
+    });
+}
+
+function calculos_iio(socket){
+  //VARIABLES RESULTADOS
+  var r_ayer = 0;
+  var r_semana = 0;
+  var r_semana_pasada = 0;
+  var r_dia_semana_pasada = 0;
+  var r_ayer_semana_pasada = 0;
+  var r_mes_actual = 0;
+
+  //Variables Ayudantes
+  var dia_semana;
+  var viernes_lunes_t;
+  var dif_dia; //Diferencias de días con relación al día actual y el día de inicio de la semana.
+
+  var today = new Date();
+  var hace1mes = new Date(today.getTime());
+  hace1mes.setDate(today.getDate() - 31);
+  hace31 = new Date(hace1mes.getFullYear(), hace1mes.getMonth(), hace1mes.getDate());
+  var hoy = moment().format("YYYY-MM-DD");
+  var unMesFormat = moment(hace31).format("YYYY-MM-DD");
+  iio.find({
+    disposetime: {
+      $gte: unMesFormat
+    }
+  }).sort({disposetime: 1}).then(result=>{
+    var estadisticas = {};
+
+    //El día de hoy
+    var hoy_now = moment().format("YYYY-MM-DD");
+    var r_hoy = result.filter((item)=>{
+      return item.disposetime.getTime() >= moment(hoy_now).valueOf();
+    });
+
+    //Desde ayer
+    var hace1dia = new Date(today.getTime());
+    hace1dia.setDate(today.getDate() - 1);
+    hace1 = new Date(hace1dia.getFullYear(), hace1dia.getMonth(), hace1dia.getDate());
+    hace1 = moment(hace1).format("YYYY-MM-DD");
+
+
+    
+    //Calcular el día de la semana que estamos
+    var chars={"á":"a", "é":"e", "í":"i", "ó":"o", "ú":"u",
+      "à":"a", "è":"e", "ì":"i", "ò":"o", "ù":"u", "ñ":"n",
+      "Á":"A", "É":"E", "Í":"I", "Ó":"O", "Ú":"U",
+      "À":"A", "È":"E", "Ì":"I", "Ò":"O", "Ù":"U", "Ñ":"N"};
+    var expr=/[áàéèíìóòúùñ]/ig;
+    var dia_actual = moment().format("dd").replace(expr, function(e){return chars[e]});
+
+    //Calcular el día hace una semana.
+    var hace1semana = new Date(today.getTime());
+    
+    hace1semana.setDate(today.getDate() - 7);
+
+    var dia_semana_pasada = new Date(hace1semana.getFullYear(), hace1semana.getMonth(), hace1semana.getDate());
+    var dia_semana_pasada_1 = new Date(hace1semana.getFullYear(), hace1semana.getMonth(), hace1semana.getDate() + 1);
+
+    var ayer_semana_pasada = new Date(hace1semana.getFullYear(), hace1semana.getMonth(), hace1semana.getDate() - 1);
+    ayer_semana_pasada = moment(ayer_semana_pasada).format("YYYY-MM-DD");
+    dia_semana_pasada = moment(dia_semana_pasada).format("YYYY-MM-DD");
+    dia_semana_pasada_1 = moment(dia_semana_pasada_1).format("YYYY-MM-DD");
+    
+    //Contar reportes del día de hace 1 semana
+    r_dia_semana_pasada = result.filter((item)=>{
+      return item.disposetime.getTime() >= moment(dia_semana_pasada).valueOf() && item.disposetime.getTime() <= moment(dia_semana_pasada_1).valueOf();
+    });
+
+    //Contar reportes del día anterior de hace 1 semana
+    r_ayer_semana_pasada = result.filter((item)=>{
+      return item.disposetime.getTime() >= moment(ayer_semana_pasada).valueOf() && item.disposetime.getTime() <= moment(dia_semana_pasada).valueOf();
+    });
+
+    //Contar IIO Durante el mes en curso
+    //Calcular el mes en curso
+    var m_hoy = new Date(today.getTime());
+    var inicio_mes = new Date(m_hoy.getFullYear(), moment().format("MM") -1, 01);
+
+    r_mes_actual = result.filter(item=>{
+      return item.disposetime.getTime() >= moment(inicio_mes).valueOf();
+    })
+
+    //Contar Reportes de esta semana.
+    switch (dia_actual) {
+      case "lu":
+        var hoy = new Date(today.getTime());
+        dif_dia = 3;
+        hoy.setDate(hoy.getDate() - 3);
+        viernes_lunes_t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        dia_semana = moment(viernes_lunes_t).format("YYYY-MM-DD");
+        break;
+      case "ma":
+        var hoy = new Date(today.getTime());
+        dif_dia = 4;
+        hoy.setDate(hoy.getDate() - 4);
+        viernes_lunes_t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        dia_semana = moment(viernes_lunes_t).format("YYYY-MM-DD");
+        break;
+      
+      case "mi":
+        var hoy = new Date(today.getTime());
+        dif_dia = 5;
+        hoy.setDate(hoy.getDate() - 5);
+        viernes_lunes_t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        dia_semana = moment(viernes_lunes_t).format("YYYY-MM-DD");
+        break;
+      case "ju":
+        var hoy = new Date(today.getTime());
+        dif_dia = 6;
+        hoy.setDate(hoy.getDate() - 6);
+        viernes_lunes_t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        dia_semana = moment(viernes_lunes_t).format("YYYY-MM-DD");
+        break;
+      case "vi":
+        dif_dia = 6;
+        var hoy = new Date(today.getTime());
+        viernes_lunes_t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        dia_semana = moment(viernes_lunes_t).format("YYYY-MM-DD");
+        break;
+      case "sa":
+        var hoy = new Date(today.getTime());
+        dif_dia = 1;
+        hoy.setDate(hoy.getDate() - 1);
+        viernes_lunes_t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        dia_semana = moment(viernes_lunes_t).format("YYYY-MM-DD");
+        break;
+      case "do":
+        var hoy = new Date(today.getTime());
+        dif_dia = 2;
+        hoy.setDate(hoy.getDate() - 2);
+        viernes_lunes_t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        dia_semana = moment(viernes_lunes_t).format("YYYY-MM-DD");
+        break;  
+      default:
+        break;
+    }
+    //Contar las IIO desde el día de ayer.
+    r_ayer = result.filter((item)=>{
+      return item.disposetime.getTime() >= moment(hace1).valueOf() && item.disposetime.getTime() <= moment(hoy_now).valueOf();
+    });
+
+    //Contar las IIO por estado, desde el día de ayer
+    iio_estados_ayer = result.filter(item=>{
+      return item.disposetime.getTime() >= moment(hace1).valueOf() && item.disposetime.getTime() <= moment(hoy_now).valueOf();
+    });
+
+
+
+    //Contar las IIO desde el inicio de la Semana (Día Viernes);
+    r_semana = result.filter((item)=>{
+      return item.disposetime.getTime() >= moment(dia_semana).valueOf();
+    });
+
+    //Contar las IIO de la jornada de la semana pasada hasta el mismo día en la semana pasada.
+    var semana_atras = new Date(viernes_lunes_t.getTime());
+    semana_atras.setDate(semana_atras.getDate() - 7);
+    var dia_sa = new Date(semana_atras.getFullYear(), semana_atras.getMonth(), semana_atras.getDate());
+    var inicio_semana_anterior = moment(dia_sa).format("YYYY-MM-DD");
+
+    var semana_atras_2 = new Date(dia_sa.getTime());
+    semana_atras_2.setDate(semana_atras_2.getDate() + dif_dia + 1);
+    var dia_sa_2 = new Date(semana_atras_2.getFullYear(), semana_atras_2.getMonth(), semana_atras_2.getDate());
+    var fin_semana_anterior = moment(dia_sa_2).format("YYYY-MM-DD");
+
+    r_semana_pasada = result.filter((item)=>{
+      return item.disposetime.getTime() >= moment(inicio_semana_anterior).valueOf() && item.disposetime.getTime() <= moment(fin_semana_anterior).valueOf();
+    });
+
+    estadisticas.c_iio_mes = r_mes_actual.length;
+    estadisticas.c_iio_hoy = r_hoy.length;
+    estadisticas.c_iio_ayer = r_ayer.length;
+    estadisticas.c_iio_semana = r_semana.length;
+    estadisticas.c_iio_dia_semana_pasada = r_dia_semana_pasada.length;
+    estadisticas.c_iio_ayer_semana_pasada = r_ayer_semana_pasada.length;
+    estadisticas.c_iio_semana_pasada = r_semana_pasada.length;
+    socket.emit("c_iio", estadisticas);
+  }).catch(err=>{
+    console.log(err);
+  })
+}
+
+function init_iio(socket){
+  //VARIABLES RESULTADOS
+  var r_ayer = 0;
+  var r_semana = 0;
+  var r_semana_pasada = 0;
+  var r_dia_semana_pasada = 0;
+  var r_ayer_semana_pasada = 0;
+  var r_mes_actual = 0;
+
+  //Variables Ayudantes
+  var dia_semana;
+  var viernes_lunes_t;
+  var dif_dia; //Diferencias de días con relación al día actual y el día de inicio de la semana.
+
+  var today = new Date();
+  var hace30dias = new Date(today.getTime());
+  hace30dias.setDate(today.getDate() - 30);
+  hace30 = new Date(hace30dias.getFullYear(), hace30dias.getMonth(), hace30dias.getDate());
+  var hoy = moment().format("YYYY-MM-DD");
+  var unMesFormat = moment(hace30).format("YYYY-MM-DD");
+  iio.find({
+    disposetime: {
+      $gte: unMesFormat
+    }
+  }).sort({disposetime: -1}).then(result=>{
+    //El día de hoy
+    var hoy_now = moment().format("YYYY-MM-DD");
+    var r_hoy = result.filter((item)=>{
+      return item.disposetime.getTime() >= moment(hoy_now).valueOf();
+    });
+    var estadisticas = {};
+
+    const rs = _.chain(r_hoy).groupBy("zodi_name");
+    const gpTematica = _.chain(r_hoy).groupBy("tematica");
+
+    //El día de Ayer
+    var hace1dia = new Date(today.getTime());
+    hace1dia.setDate(today.getDate() - 1);
+    hace1 = new Date(hace1dia.getFullYear(), hace1dia.getMonth(), hace1dia.getDate());
+    hace1 = moment(hace1).format("YYYY-MM-DD");
+    
+    //Calcular el día de la semana que estamos
+    var chars={"á":"a", "é":"e", "í":"i", "ó":"o", "ú":"u",
+      "à":"a", "è":"e", "ì":"i", "ò":"o", "ù":"u", "ñ":"n",
+      "Á":"A", "É":"E", "Í":"I", "Ó":"O", "Ú":"U",
+      "À":"A", "È":"E", "Ì":"I", "Ò":"O", "Ù":"U", "Ñ":"N"};
+    var expr=/[áàéèíìóòúùñ]/ig;
+    var dia_actual = moment().format("dd").replace(expr, function(e){return chars[e]});
+
+    //Calcular el día hace una semana.
+    var hace1semana = new Date(today.getTime());
+    
+    hace1semana.setDate(today.getDate() - 7);
+
+    var dia_semana_pasada = new Date(hace1semana.getFullYear(), hace1semana.getMonth(), hace1semana.getDate());
+    var dia_semana_pasada_1 = new Date(hace1semana.getFullYear(), hace1semana.getMonth(), hace1semana.getDate() + 1);
+
+    var ayer_semana_pasada = new Date(hace1semana.getFullYear(), hace1semana.getMonth(), hace1semana.getDate() - 1);
+    ayer_semana_pasada = moment(ayer_semana_pasada).format("YYYY-MM-DD");
+    dia_semana_pasada = moment(dia_semana_pasada).format("YYYY-MM-DD");
+    dia_semana_pasada_1 = moment(dia_semana_pasada_1).format("YYYY-MM-DD");
+    
+    //Contar reportes del día de hace 1 semana
+    r_dia_semana_pasada = result.filter((item)=>{
+      return item.disposetime.getTime() >= moment(dia_semana_pasada).valueOf() && item.disposetime.getTime() <= moment(dia_semana_pasada_1).valueOf();
+    });
+
+    //Contar reportes del día anterior de hace 1 semana
+    r_ayer_semana_pasada = result.filter((item)=>{
+      return item.disposetime.getTime() >= moment(ayer_semana_pasada).valueOf() && item.disposetime.getTime() <= moment(dia_semana_pasada).valueOf();
+    });
+
+    //Contar IIO Durante el mes en curso
+    //Calcular el mes en curso
+    var m_hoy = new Date(today.getTime());
+    var inicio_mes = new Date(m_hoy.getFullYear(), moment().format("MM") -1, 01);
+
+    r_mes_actual = result.filter(item=>{
+      return item.disposetime.getTime() >= moment(inicio_mes).valueOf();
+    })
+
+    //Contar Reportes de esta semana.
+    switch (dia_actual) {
+      case "lu":
+        var hoy = new Date(today.getTime());
+        dif_dia = 3;
+        hoy.setDate(hoy.getDate() - 3);
+        viernes_lunes_t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        dia_semana = moment(viernes_lunes_t).format("YYYY-MM-DD");
+        break;
+      case "ma":
+        var hoy = new Date(today.getTime());
+        dif_dia = 4;
+        hoy.setDate(hoy.getDate() - 4);
+        viernes_lunes_t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        dia_semana = moment(viernes_lunes_t).format("YYYY-MM-DD");
+        break;
+      
+      case "mi":
+        var hoy = new Date(today.getTime());
+        dif_dia = 5;
+        hoy.setDate(hoy.getDate() - 5);
+        viernes_lunes_t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        dia_semana = moment(viernes_lunes_t).format("YYYY-MM-DD");
+        break;
+      case "ju":
+        var hoy = new Date(today.getTime());
+        dif_dia = 6;
+        hoy.setDate(hoy.getDate() - 6);
+        viernes_lunes_t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        dia_semana = moment(viernes_lunes_t).format("YYYY-MM-DD");
+        break;
+      case "vi":
+        dif_dia = 6;
+        var hoy = new Date(today.getTime());
+        viernes_lunes_t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        dia_semana = moment(viernes_lunes_t).format("YYYY-MM-DD");
+        break;
+      case "sa":
+        var hoy = new Date(today.getTime());
+        dif_dia = 1;
+        hoy.setDate(hoy.getDate() - 1);
+        viernes_lunes_t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        dia_semana = moment(viernes_lunes_t).format("YYYY-MM-DD");
+        break;
+      case "do":
+        var hoy = new Date(today.getTime());
+        dif_dia = 2;
+        hoy.setDate(hoy.getDate() - 2);
+        viernes_lunes_t = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        dia_semana = moment(viernes_lunes_t).format("YYYY-MM-DD");
+        break;  
+      default:
+        break;
+    }
+    //Contar las IIO desde el día de ayer.
+    r_ayer = result.filter((item)=>{
+      return item.disposetime.getTime() >= moment(hace1).valueOf() && item.disposetime.getTime() <= moment(hoy_now).valueOf();
+    });
+
+    //Contar las IIO desde el inicio de la Semana (Día Viernes);
+    r_semana = result.filter((item)=>{
+      return item.disposetime.getTime() >= moment(dia_semana).valueOf();
+    });
+
+    //Contar las IIO de la jornada de la semana pasada hasta el mismo día en la semana pasada.
+    var semana_atras = new Date(viernes_lunes_t.getTime());
+    semana_atras.setDate(semana_atras.getDate() - 7);
+    var dia_sa = new Date(semana_atras.getFullYear(), semana_atras.getMonth(), semana_atras.getDate());
+    var inicio_semana_anterior = moment(dia_sa).format("YYYY-MM-DD");
+
+    var semana_atras_2 = new Date(dia_sa.getTime());
+    semana_atras_2.setDate(semana_atras_2.getDate() + dif_dia + 1);
+    var dia_sa_2 = new Date(semana_atras_2.getFullYear(), semana_atras_2.getMonth(), semana_atras_2.getDate());
+    var fin_semana_anterior = moment(dia_sa_2).format("YYYY-MM-DD");
+
+    r_semana_pasada = result.filter((item)=>{
+      return item.disposetime.getTime() >= moment(inicio_semana_anterior).valueOf() && item.disposetime.getTime() <= moment(fin_semana_anterior).valueOf();
+    });
+
+    estadisticas.c_iio_mes = r_mes_actual.length;
+    estadisticas.c_iio_hoy = r_hoy.length;
+    estadisticas.c_iio_ayer = r_ayer.length;
+    estadisticas.c_iio_semana = r_semana.length;
+    estadisticas.c_iio_dia_semana_pasada = r_dia_semana_pasada.length;
+    estadisticas.c_iio_ayer_semana_pasada = r_ayer_semana_pasada.length;
+    estadisticas.c_iio_semana_pasada = r_semana_pasada.length;
+    estadisticas.data_mes = r_mes_actual;
+    estadisticas.data = r_hoy;
+    estadisticas.rs = rs;
+    estadisticas.gpTematica = gpTematica;
+    socket.emit("r_init_iio", estadisticas);
+  }).catch(err=>{
+    console.log(err);
+  })
+}
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
+
+var tiempo_inteligente = 60000;
+var vuelta = 0;
+var interval;
+
+function add_iio(datos_iio) {
+  iio.findOne({id: datos_iio.id}).then(result=>{
+    console.log("result:", result);
+    if (!result){
+      oracledb.getConnection(cns, async(err, cn)=>{
+        if(error(err, cn)==-1){return}
+        else{
+          var sql = `SELECT * FROM V_SI2_SGI_IIO WHERE id=${datos_iio.id}`;
+          return await cn.execute(sql, [], {autoCommit: false}, async(err, res)=>{
+            if(error(err, cn)==-1){return}
+            else{
+              close(cn);
+              var chars={"á":"a", "é":"e", "í":"i", "ó":"o", "ú":"u",
+              "à":"a", "è":"e", "ì":"i", "ò":"o", "ù":"u", "ñ":"n",
+              "Á":"A", "É":"E", "Í":"I", "Ó":"O", "Ú":"U",
+              "À":"A", "È":"E", "Ì":"I", "Ò":"O", "Ù":"U", "Ñ":"N"};
+              var expr=/[áàéèíìóòúùñ]/ig;
+              var expr2=/[\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u001b]/gu;
+              console.log(res.rows[0]);
+              var registro = res.rows[0];
+              try {
+                var myiio = {};
+                myiio.id = registro[0];
+                myiio.area = registro[1];
+                myiio.descriptiontxt = registro[2].replace("·", "").trim();
+                myiio.createtime = moment(registro[3]).add(30, "minutes").format('YYYY-MM-DD HH:mm');
+                myiio.disposetime = moment(registro[4]).add(30, "minutes").format('YYYY-MM-DD HH:mm');
+                myiio.tematica = registro[5].toLowerCase();;
+                myiio.subcategory = registro[6];
+                myiio.category = registro[7];
+                myiio.regionid = registro[8];
+                myiio.name = registro[9];
+                myiio.username = registro[10];
+                myiio.nickname = registro[11];
+                myiio.zodi_name = registro[12];
+                myiio.adi_name = registro[13];
+                myiio.parrish_name = registro[14];
+                myiio.priorizado = datos_iio.priorizado;
+                var newSMS = new iio(myiio);
+                newSMS.save();
+                myEmisor.emit("event", [newSMS]);
+              }catch (error){
+                console.log("Error: ", error);
+              }
+            }
+          })
+        }
+      })
+    }
+  }).catch(err=>{
+    console.error("Error al buscar en la BD Mongo: ", err);
+  });
+}
+
+//BOT cada 1 Minuto
+function bot_iio(){
+    iio.find().sort({disposetime: -1}).limit(1).then(resultado=>{
+        if(resultado.length > 0){
+            var today = new Date();
+            var ultimaVez = moment(resultado[0].disposetime).subtract(30, 'minutes').format('YYYY-MM-DD HH:mm');
+            var hoy = moment().format("YYYY-MM-DD HH:mm:ss");
+            console.log(today.toLocaleString(), "Buscando Nuevos en BD Oracle entre", ultimaVez, "y", hoy);
+            var sql = `SELECT * FROM V_SI2_SGI_IIO WHERE DISPOSETIME BETWEEN TO_DATE('${ultimaVez}', 'yyyy-mm-dd hh24:mi:ss') and TO_DATE('${hoy}', 'yyyy-mm-dd hh24:mi:ss')+1`;
+            oracledb.getConnection(cns, async (err, cn)=>{
+                if(error(err, cn)==-1){return}
+                else{
+                  return await cn.execute(sql, [], {autoCommit: false}, async (err, result)=>{
+                    if(error(err, cn)==-1){return}
+                    else{ 
+                      close(cn);
+                      var codMensaje = []; //Se utilizará para guardar temporalmente los ID de los reportes.
+                      result.rows.map((mensaje, key)=>{
+                        if(mensaje[2]){ //Guardamos el código solo si el mensaje tiene algún contenido.
+                            codMensaje.push(parseInt(mensaje[0].toString())); //Guardamos solo el código del mensaje en el array.
+                        }
+                      });
+                      var codMensajesGuardados = []; //Aquí verificaremos cuales códigos ya están guardados en Mongodb.
+                      await iio.find({id: {$in: codMensaje}}).then(resM=>{
+                          if(resM){
+                              resM.map((codigoSMS, key)=>{
+                                  codMensajesGuardados.push(parseInt(codigoSMS.id));
+                              })
+                          }
+                      });
+                      var mensajesNuevos = 0;
+                      var arr_iio = [];
+                      await result.rows.map(registro=>{
+                        if(codMensajesGuardados.indexOf(parseInt(registro[0])) === -1){
+                          var expr2=/[\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u001b]/gu;
+                          try {
+                            var myiio = {};
+                            myiio.id = registro[0];
+                            myiio.area = registro[1];
+                            myiio.descriptiontxt = registro[2].replace("·", "").trim();
+                            myiio.createtime = moment(registro[3]).add(30, "minutes").format('YYYY-MM-DD HH:mm');
+                            myiio.disposetime = moment(registro[4]).add(30, "minutes").format('YYYY-MM-DD HH:mm');
+                            myiio.tematica = registro[5].toLowerCase();;
+                            myiio.subcategory = registro[6];
+                            myiio.category = registro[7];
+                            myiio.regionid = registro[8];
+                            myiio.name = registro[9];
+                            myiio.username = registro[10];
+                            myiio.nickname = registro[11];
+                            myiio.zodi_name = registro[12];
+                            myiio.adi_name = registro[13];
+                            myiio.parrish_name = registro[14];
+                            var newSMS = new iio(myiio);
+                            arr_iio.push(newSMS);
+                            mensajesNuevos += 1; 
+                            newSMS.save();
+                          } catch (error) {
+                            console.log("Error: ", error);
+                          }
+                        }
+                      });
+                      if(mensajesNuevos === 0 && vuelta <= 3){
+                        tiempo_inteligente = 10000;
+                        clearInterval(interval);
+                        interval = setInterval(bot_iio, tiempo_inteligente); 
+                      }else if(mensajesNuevos === 0 && vuelta > 500){
+                        tiempo_inteligente = 300000;
+                        clearInterval(interval);
+                        interval = setInterval(bot_iio, tiempo_inteligente); 
+                      }else if(mensajesNuevos>0 && mensajesNuevos <= 5){
+                        tiempo_inteligente = 45000;
+                        vuelta = 0;
+                        clearInterval(interval);
+                        interval = setInterval(bot_iio, tiempo_inteligente); 
+                      }else if(mensajesNuevos>5){
+                        tiempo_inteligente = 10000; 
+                        vuelta = 0;
+                        clearInterval(interval);
+                        interval = setInterval(bot_iio, tiempo_inteligente); 
+                      }
+                      if(mensajesNuevos>0){
+                        myEmisor.emit("event", arr_iio);
+                      }
+                      console.log("Guardados " + mensajesNuevos + " IIO | vuelta: ", vuelta, "buscando cada: " + tiempo_inteligente / 1000, " segundos");
+                    }
+                  })
+                }
+              })
+        }
+        else {console.log("No hay ningún registro en la BD")};
+    }).catch(err=>{
+        console.log("Error en el sistema:", err);
+    });
+    (vuelta < 501) ? vuelta++ : vuelta;
+}
