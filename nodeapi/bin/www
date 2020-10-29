@@ -86,7 +86,6 @@ io.on('connection', (socket)=>{
 
   //Recibimos alerta de que fue cargada una IIO desde la página del SEP
   socket.on("add_iio_sep", datos_iio=>{
-    console.log(datos_iio);
     add_iio(datos_iio)
   });
 });
@@ -580,7 +579,6 @@ var interval;
 
 function add_iio(datos_iio) {
   iio.findOne({id: datos_iio.id}).then(result=>{
-    console.log("result:", result);
     if (!result){
       oracledb.getConnection(cns, async(err, cn)=>{
         if(error(err, cn)==-1){return}

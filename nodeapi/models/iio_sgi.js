@@ -14,6 +14,7 @@ const IIO = new Schema({
     username: {type: String},
     nickname: {type: String},
     zodi_name: {type: String},
+    redi_name: {type: String},
     adi_name: {type: String},
     parrish_name: {type: String},
     priorizado: {type: Boolean, default: false},

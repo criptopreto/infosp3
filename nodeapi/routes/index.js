@@ -216,6 +216,7 @@ router.get("/iio_import_dias/:id", async(req, res)=>{
                   })
               }
           });
+          console.log(result.rows[0])
           var mensajesNuevos = 0;
           await result.rows.map(registro=>{
             if(codMensajesGuardados.indexOf(parseInt(registro[0])) === -1){
@@ -233,9 +234,11 @@ router.get("/iio_import_dias/:id", async(req, res)=>{
                 myiio.name = registro[9];
                 myiio.username = registro[10];
                 myiio.nickname = registro[11];
-                myiio.zodi_name = registro[12];
-                myiio.adi_name = registro[13];
-                myiio.parrish_name = registro[14];
+                myiio.redi_name = registro[12];
+                myiio.zodi_name = registro[13];
+                myiio.adi_name = registro[14];
+                myiio.parrish_name = registro[15];
+          
                 var newSMS = new iio.IIO(myiio);
                 mensajesNuevos += 1;
                 newSMS.save();
