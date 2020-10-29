@@ -367,6 +367,8 @@
                     }
                 });
 
+                console.log(st_data);
+
                 Highcharts.getJSON("{% static 'maps/venezuela4.json' %}", function (geojson) {
                     // Initiate the chart
                     chart_map = new Highcharts.mapChart('container', {
