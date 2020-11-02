@@ -588,13 +588,6 @@ function add_iio(datos_iio) {
             if(error(err, cn)==-1){return}
             else{
               close(cn);
-              var chars={"á":"a", "é":"e", "í":"i", "ó":"o", "ú":"u",
-              "à":"a", "è":"e", "ì":"i", "ò":"o", "ù":"u", "ñ":"n",
-              "Á":"A", "É":"E", "Í":"I", "Ó":"O", "Ú":"U",
-              "À":"A", "È":"E", "Ì":"I", "Ò":"O", "Ù":"U", "Ñ":"N"};
-              var expr=/[áàéèíìóòúùñ]/ig;
-              var expr2=/[\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u001b]/gu;
-              console.log(res.rows[0]);
               var registro = res.rows[0];
               try {
                 var myiio = {};
@@ -610,9 +603,10 @@ function add_iio(datos_iio) {
                 myiio.name = registro[9];
                 myiio.username = registro[10];
                 myiio.nickname = registro[11];
-                myiio.zodi_name = registro[12];
-                myiio.adi_name = registro[13];
-                myiio.parrish_name = registro[14];
+                myiio.redi_name = registro[12];
+                myiio.zodi_name = registro[13];
+                myiio.adi_name = registro[14];
+                myiio.parrish_name = registro[15];
                 myiio.priorizado = datos_iio.priorizado;
                 var newSMS = new iio(myiio);
                 newSMS.save();
