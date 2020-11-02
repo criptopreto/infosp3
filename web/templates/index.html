@@ -170,6 +170,7 @@
     <script src="{% static 'vendor/amchart/themes/animated.js' %}"></script>
     <script src="{% static 'vendor/dexiejs/dexie.js' %}"></script>
     <script src="{% static 'vendor/lodash/lodash.min.js' %}"></script>
+    <script src="{% static 'vendor/nosleep/nosleep.min.js' %}"></script>
     <script>
         var chart_map;
         var buffer_iio = [];
@@ -177,6 +178,7 @@
         var is_realtime = true;
         var iiodb = new Dexie("iio_database");
         var nuevasiio = 0;
+        var noSleep = new NoSleep();
 
         var zodi_tie = [
             {nombre: "Distrito Capital", codigo: "dc"},
@@ -276,6 +278,12 @@
         });
 
         $(document).ready(function () {
+            // Enable wake lock.
+            // (must be wrapped in a user input event handler e.g. a mouse or touch handler)
+            document.addEventListener('click', function enableNoSleep() {
+            document.removeEventListener('click', enableNoSleep, false);
+            noSleep.enable();
+            }, false);
             //Appending HTML5 Audio Tag in HTML Body
             var audio = new Audio('{% static "audio/pop.mp3" %}');
             var alerta = new Audio('{% static "audio/alerta.mp3" %}');
