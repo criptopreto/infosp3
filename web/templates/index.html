@@ -391,22 +391,59 @@
                         },
                         mapNavigation: {
                             enabled: true,
-                            buttonOptions: {
-                            verticalAlign: 'bottom'
-                            }
                         },
                         colorAxis: {
-                            min: 0,
-                            stops: [
-                                [0, '#EFEFFF'],
-                                [0.5, "#64513D"],
-                                [1, Highcharts.color("#64513D").brighten(-0.5).get()]
-                            ]
+                            labels: {
+                                format: '{value}°C'
+                            },
+                            dataClasses: [{
+                                to: 10,
+                                name: '<10 | Deficiente',
+                                color: '#ff9a46'
+                            }, {
+                                from: 10,
+                                to: 20,
+                                name: '10-20 | Regular',
+                                color: '#fedb64'
+                            }, {
+                                from: 20,
+                                to: 30,
+                                name: '20-30 | Bueno',
+                                color: '#aae339'
+                            }, {
+                                from: 30,
+                                to: 50,
+                                name: '30-50 | Eficiente',
+                                color: '#6cd83a'
+                            }, {
+                                from: 50,
+                                name: '>50 | Excelente',
+                                color: '#26b041'
+                            }]
                         },
                         legend: {
+                            title: {
+                                text: 'Informaciones Procesadas',
+                                style: {
+                                    color: ( // theme
+                                        Highcharts.defaultOptions &&
+                                        Highcharts.defaultOptions.legend &&
+                                        Highcharts.defaultOptions.legend.title &&
+                                        Highcharts.defaultOptions.legend.title.style &&
+                                        Highcharts.defaultOptions.legend.title.style.color
+                                    ) || 'black'
+                                }
+                            },
+                            floating: true,
                             layout: 'vertical',
                             align: 'left',
-                            verticalAlign: 'bottom'
+                            verticalAlign: 'bottom',
+                            valueDecimals: 0,
+                            backgroundColor: ( // theme
+                                Highcharts.defaultOptions &&
+                                Highcharts.defaultOptions.legend &&
+                                Highcharts.defaultOptions.legend.backgroundColor
+                            ) || 'rgba(255, 255, 255, 0.85)',
                         },
                         series: [{
                             data: st_data,
