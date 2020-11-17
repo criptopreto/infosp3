@@ -228,6 +228,10 @@
         var noSleep = new NoSleep();
         var LS = window.localStorage;
         var socket;
+        var is_supervisor = false;
+        {% if request.user|has_group:"supervisores" %} 
+        is_supervisor = true;
+        {% endif %}
 
         var zodi_tie = [
             {nombre: "Distrito Capital", codigo: "dc"},
@@ -399,14 +403,14 @@
                             var iio_html = `
                             <div class="iio">
                                 <div class="wrap-content">
-                                    <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> {% if request.user|has_group:"supervisores" %} <span class="float-right mr-2 btn btn-sm btn-danger cModalDelete" onclick="javascript:addinfo(${iio.id})" data-toggle="modal" data-target="#modalDelete"><i class="fas fa-trash-alt"></i></span> <span class="float-right mr-1 btn btn-sm btn-warning"><i class="fas fa-reply"></i></span> <span class="float-right mr-1 btn btn-sm btn-primary"><i class="fas fa-edit"></i></span> {% endif %} </div>
+                                    <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${is_supervisor ? `<span class="float-right mr-2 btn btn-sm btn-danger cModalDelete" onclick="javascript:addinfo(${iio.id})" data-toggle="modal" data-target="#modalDelete"><i class="fas fa-trash-alt"></i></span> <span class="float-right mr-1 btn btn-sm btn-warning"><i class="fas fa-reply"></i></span> <span class="float-right mr-1 btn btn-sm btn-primary"><i class="fas fa-edit"></i></span>` : ""} </div>
                                     <div class="row">
                                         <div class="${iio.isimage ? 'col-8' : "col-12"}">
                                             <div class="texto-iio"><span>${iio.descriptiontxt}</span></div>
                                         </div>
                                     </div>
                                     <div class="iio-footer" style="background-color: ${cfg_tie.color} !important">
-                                        <div class="tag-ubicacion">REDI ${key_redi[iio.zodi_name.toLowerCase()] + " - " + iio.zodi_name.toUpperCase() + " - " + iio.adi_name.toUpperCase()} <span class="float-right tag-tiempo">${gfh(iio.disposetime)}</span> {% if request.user|has_group:"supervisores" %}<span class="float-right">${iio.nickname.toUpperCase() + "&nbsp&nbsp-&nbsp&nbsp"}</span>{% endif %}</div>
+                                        <div class="tag-ubicacion">REDI ${key_redi[iio.zodi_name.toLowerCase()] + " - " + iio.zodi_name.toUpperCase() + " - " + iio.adi_name.toUpperCase()} <span class="float-right tag-tiempo">${gfh(iio.disposetime)}</span> ${is_supervisor ? `<span class="float-right">${iio.nickname.toUpperCase() + "&nbsp&nbsp-&nbsp&nbsp"}</span>` : ""}</div>
                                     </div>
                                 </div>
                             </div>
