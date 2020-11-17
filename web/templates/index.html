@@ -322,7 +322,7 @@
                             var iio_html = `
                             <div class="iio" id="iio_${iio.id}">
                                 <div class="wrap-content">
-                                    <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span></div>
+                                    <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> {% if request.user|has_group:"supervisores" %} <span class="float-right mr-2 btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i></span> <span class="float-right mr-1 btn btn-sm btn-warning"><i class="fas fa-reply"></i></span> <span class="float-right mr-1 btn btn-sm btn-primary"><i class="fas fa-edit"></i></span> {% endif %} </div>
                                     <div class="row">
                                         <div class="${iio.isimage ? 'col-8' : "col-12"}">
                                             <div class="texto-iio"><span>${iio.descriptiontxt}</span></div>

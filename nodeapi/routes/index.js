@@ -332,6 +332,18 @@ router.get("/iio_tabla", async (req, res)=>{
   })
 });
 
+router.delete("/iio/:id", async(req, res)=>{
+  var idIIO = parseInt(req.params.id);
+  console.log(idIIO);
+  iio.IIO.deleteOne({
+    id: idIIO
+  }).then(msg=>{
+    res.json({error: false, data: msg});
+  }).catch(err=>{
+    res.json({error: true, data: err});
+  })
+});
+
 router.get("/exploradores_tabla", async (req, res)=>{
   var agentes = await oracledb.getConnection(cns, async (err, cn)=>{
     if(error(err, cn)==-1){return}
