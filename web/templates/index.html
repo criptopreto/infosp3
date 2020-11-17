@@ -334,7 +334,7 @@
         function deleteiio(){
             var idIIO = LS.getItem('id_iio_delete');
             $.ajax({
-                url: `{{ config.SERVIDOR_NODEAPI }}/iio/${idIIO}}`,
+                url: `{{ config.SERVIDOR_NODEAPI }}/iio/${idIIO}}}`,
                 type: "DELETE",
                 success: function(resp){
                     if(!resp.error){
