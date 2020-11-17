@@ -75,6 +75,11 @@ io.on('connection', (socket)=>{
     get_status_vpn(socket);
   });
 
+  socket.on("delete_iio", idIIO=>{
+    console.log("solicitud de eliminación de IIO");
+    socket.emit("s_delete_iio", idIIO);
+  });
+
   io.of("/").adapter.clients((err, clients)=>{
     console.log(clients);
   })

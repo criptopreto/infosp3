@@ -334,10 +334,20 @@ router.get("/iio_tabla", async (req, res)=>{
 
 router.delete("/iio/:id", async(req, res)=>{
   var idIIO = parseInt(req.params.id);
-  console.log(idIIO);
   iio.IIO.deleteOne({
     id: idIIO
-  }).then(msg=>{
+  }).then(async msg=>{
+    await oracledb.getConnection(cns, async (err, cn)=>{
+      if(error(err, cn)==-1){return}
+      else{
+        return await cn.execute(`DELETE FROM MESSAGE WHERE ID = :idIIO`, { idIIO:  idIIO}, {autoCommit: true}, async (err, result)=>{
+          if(error(err, cn)==-1){return}
+          else{
+            close(cn);
+          }
+        })
+      }
+    });
     res.json({error: false, data: msg});
   }).catch(err=>{
     res.json({error: true, data: err});

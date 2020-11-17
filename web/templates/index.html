@@ -4,6 +4,7 @@
 
 {% block extracss %}
     <link rel="stylesheet" href="{% static 'css/principal/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'vendor/bsmultiselect/css/BsMultiSelect.min.css' %}">
 {% endblock extracss %}
 
 {% block content %}
@@ -37,6 +38,13 @@
                     <div class="col-8">
                         <form id="acciones">
                         <div class="content-info-realtime">
+                            <select name="states" id="selectZodi" class="form-control"  multiple="multiple" style="display: none;">
+                                <option value="AL">Alabama</option>
+                                <option value="AK">Alaska</option>
+                                <option value="AZ">Arizona</option>
+                                <option value="AR">Arkansas</option>
+                                <option selected value="CA">California</option>
+                            </select>
                             <h5>Información de Interés Operativo <span class="badge badge-pill badge-success" id="numiio">0</span> 
                             <div class="btn-group btn-group-toggle" data-toggle="buttons">
                                 <label class="btn btn-danger active">
@@ -52,7 +60,7 @@
                                     <input type="radio" name="options" id="mes" value="mes" autocomplete="off"> <i class="fas fa-calendar-alt"></i> Mes
                                 </label>
                             </div>
-                             <button class="btn btn-sm btn-danger float-right"><i class="fas fa-filter"></i> Filtrar</button></h5>
+                             <button type="button" data-toggle="modal" data-target="#modalFiltro" class="btn btn-sm btn-danger float-right"><i class="fas fa-filter"></i> Filtrar</button></h5>
                         </div>
                         </form>
                         <div class="content-realtime">
@@ -155,7 +163,45 @@
 {% endblock content %}
 
 {% block modals %}
-    
+    <!-- Modal Filtros -->
+    <div class="modal fade" id="modalFiltro" tabindex="-1" aria-labelledby="modalFiltroLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalFiltroLabel">Filtros</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Aceptar</button>
+            </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal -->
+    <div class="modal fade" id="modalDelete" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="modalDeleteLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="modalDeleteLabel">Eliminar IIO <span id="dataM"></span></h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            ¿Está seguro que desea eliminar esta IIO?
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+            <button type="button" onclick="javascript:deleteiio()" class="btn btn-primary">Aceptar</button>
+        </div>
+        </div>
+    </div>
+    </div>
 {% endblock modals %}
 
 {% block extrajs %}
@@ -171,6 +217,7 @@
     <script src="{% static 'vendor/dexiejs/dexie.js' %}"></script>
     <script src="{% static 'vendor/lodash/lodash.min.js' %}"></script>
     <script src="{% static 'vendor/nosleep/nosleep.min.js' %}"></script>
+    <script src="{% static 'vendor/bsmultiselect/js/BsMultiSelect.min.js' %}"></script>
     <script>
         var chart_map;
         var buffer_iio = [];
@@ -179,6 +226,8 @@
         var iiodb = new Dexie("iio_database");
         var nuevasiio = 0;
         var noSleep = new NoSleep();
+        var LS = window.localStorage;
+        var socket;
 
         var zodi_tie = [
             {nombre: "Distrito Capital", codigo: "dc"},
@@ -277,17 +326,45 @@
             iio: '&id,area,descriptiontxt,createtime,disposetime,tematica,subcategory,category,regionid,name,username,nickname,zodi_name,adi_name,parrish_name,priorizado,confirmado,aprobado,allowtime,editmode,isimage'
         });
 
+        function addinfo(id){
+            $("#dataM").html(id);
+            LS.setItem("id_iio_delete", id);
+        };
+
+        function deleteiio(){
+            var idIIO = LS.getItem('id_iio_delete');
+            $.ajax({
+                url: `{{ config.SERVIDOR_NODEAPI }}/iio/${idIIO}}`,
+                type: "DELETE",
+                success: function(resp){
+                    if(!resp.error){
+                        if(resp.data.n === 0){
+                            console.log("¡El elemento no existe!");
+                        }else{
+                            console.log("IIO Eliminada con éxito");
+                            socket.emit("delete_iio", idIIO);
+                        }
+                    }else{
+                        console.log("Error al intentar eliminar la IIO");
+                    }
+                },
+                error: function(err){
+                    console.log("Error al intentar eliminar la IIO");
+                }
+            });
+        };
+
         $(document).ready(function () {
             // Enable wake lock.
             // (must be wrapped in a user input event handler e.g. a mouse or touch handler)
+            socket = io("{{ config.SERVIDOR_NODEAPI }}");
             document.addEventListener('click', function enableNoSleep() {
             document.removeEventListener('click', enableNoSleep, false);
-            noSleep.enable();
+                noSleep.enable();
             }, false);
             //Appending HTML5 Audio Tag in HTML Body
             var audio = new Audio('{% static "audio/pop.mp3" %}');
             var alerta = new Audio('{% static "audio/alerta.mp3" %}');
-            var socket = io("{{ config.SERVIDOR_NODEAPI }}");
             socket.on("connect", ()=>{
                 console.log("Conectados al Servidor Realtime...")
                 socket.emit("get_iio_init");
@@ -320,16 +397,16 @@
                         if(key<500){
                             cfg_tie = key_tie[iio.tematica];
                             var iio_html = `
-                            <div class="iio" id="iio_${iio.id}">
+                            <div class="iio">
                                 <div class="wrap-content">
-                                    <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> {% if request.user|has_group:"supervisores" %} <span class="float-right mr-2 btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i></span> <span class="float-right mr-1 btn btn-sm btn-warning"><i class="fas fa-reply"></i></span> <span class="float-right mr-1 btn btn-sm btn-primary"><i class="fas fa-edit"></i></span> {% endif %} </div>
+                                    <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> {% if request.user|has_group:"supervisores" %} <span class="float-right mr-2 btn btn-sm btn-danger cModalDelete" onclick="javascript:addinfo(${iio.id})" data-toggle="modal" data-target="#modalDelete"><i class="fas fa-trash-alt"></i></span> <span class="float-right mr-1 btn btn-sm btn-warning"><i class="fas fa-reply"></i></span> <span class="float-right mr-1 btn btn-sm btn-primary"><i class="fas fa-edit"></i></span> {% endif %} </div>
                                     <div class="row">
                                         <div class="${iio.isimage ? 'col-8' : "col-12"}">
                                             <div class="texto-iio"><span>${iio.descriptiontxt}</span></div>
                                         </div>
                                     </div>
                                     <div class="iio-footer" style="background-color: ${cfg_tie.color} !important">
-                                        <div class="tag-ubicacion">REDI ${key_redi[iio.zodi_name.toLowerCase()] + " - " + iio.zodi_name.toUpperCase() + " - " + iio.adi_name.toUpperCase()} <span class="float-right tag-tiempo">${gfh(iio.disposetime)}</span></div>
+                                        <div class="tag-ubicacion">REDI ${key_redi[iio.zodi_name.toLowerCase()] + " - " + iio.zodi_name.toUpperCase() + " - " + iio.adi_name.toUpperCase()} <span class="float-right tag-tiempo">${gfh(iio.disposetime)}</span> {% if request.user|has_group:"supervisores" %}<span class="float-right">${iio.nickname.toUpperCase() + "&nbsp&nbsp-&nbsp&nbsp"}</span>{% endif %}</div>
                                     </div>
                                 </div>
                             </div>
@@ -618,6 +695,10 @@
             socket.on("c_iio", (data)=>{
                 console.log("Estadísticas");
                 console.log(data);
+            });
+
+            socket.on("s_delete_iio", (sidIIO)=>{
+                console.log("Orden de eliminar la IIO", sidIIO);
             });
 
             socket.on("n_iio", (data)=>{
