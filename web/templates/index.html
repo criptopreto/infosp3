@@ -439,23 +439,17 @@
                 //Agrupar las IIO del día hoy por zodi
                 iiogZodi = _.groupBy(arrIIO, "zodi_name");
                 iiogTematica = _.groupBy(arrIIO, "tematica");
-                console.log("arrIIO", arrIIO);
-                console.log(iiogZodi);
-                console.log(iiogTematica);
 
                 st_data = [];
 
                 zodi_tie.forEach(iZodi=>{
                     if (iiogZodi[iZodi.nombre]){
-                        console.log(iZodi)
                         temp = [];
                         temp.push(iZodi.codigo);
                         temp.push(iiogZodi[iZodi.nombre].length);
                         st_data.push(temp)
                     }
                 });
-
-                console.log(st_data);
 
                 Highcharts.getJSON("{% static 'maps/venezuela4.json' %}", function (geojson) {
                     // Initiate the chart
@@ -605,7 +599,6 @@
                         // Hoy
                         var m_hoy = moment(new Date()).format("YYYY-MM-DD");
                         var iio_realtime = await iiodb.iio.where('disposetime').above(m_hoy).toArray();
-                        console.log("iiorealtime", iio_realtime);
                         cargarIIO(iio_realtime)
                         break;
                     case 'ayer':
@@ -693,8 +686,6 @@
                 }
             });
             socket.on("c_iio", (data)=>{
-                console.log("Estadísticas");
-                console.log(data);
             });
 
             socket.on("s_delete_iio", (sidIIO)=>{
