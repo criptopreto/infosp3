@@ -64,7 +64,7 @@
                         </div>
                         </form>
                         <div class="content-realtime">
-                            <div id="iios-content">
+                            <div id="iios-content" class=".iiocontainer">
                                 
                             </div>
                             <div class="placeholder-iio-wrapper">
@@ -184,28 +184,49 @@
     </div>
     <!-- Modal -->
     <div class="modal fade" id="modalDelete" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="modalDeleteLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-        <div class="modal-header">
-            <h5 class="modal-title" id="modalDeleteLabel">Eliminar IIO <span id="dataM"></span></h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-        <div class="modal-body">
-            ¿Está seguro que desea eliminar esta IIO?
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-            <button type="button" onclick="javascript:deleteiio()" class="btn btn-primary">Aceptar</button>
-        </div>
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDeleteLabel">Eliminar IIO <span id="dataM"></span></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                ¿Está seguro que desea eliminar esta IIO?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" onclick="javascript:deleteiio()" class="btn btn-primary">Aceptar</button>
+            </div>
+            </div>
         </div>
     </div>
+
+    <!-- Modal Opciones IIO -->
+    <div class="modal fade" id="modalOpcionesIIO" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="modalOpcionesIIOLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalOpcionesIIOLabel">Opciones IIO  <span id="dataM"></span></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                ¿Está seguro que desea eliminar esta IIO?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" onclick="javascript:deleteiio()" class="btn btn-primary">Aceptar</button>
+            </div>
+            </div>
+        </div>
     </div>
 {% endblock modals %}
 
 {% block extrajs %}
-    <script src="{{ config.SERVIDOR_NODEAPI }}/socket.io/socket.io.js"></script>
+    <script src="{{ config.SERVIDOR_NODEAPI }}/socket/socket.io.min.js"></script>
     <script src="{% static 'vendor/highmaps/highmaps.js' %}"></script>
     <script src="{% static 'vendor/highmaps/data.js' %}"></script>
     <script src="{% static 'vendor/highmaps/exporting.js' %}"></script>
@@ -218,511 +239,17 @@
     <script src="{% static 'vendor/lodash/lodash.min.js' %}"></script>
     <script src="{% static 'vendor/nosleep/nosleep.min.js' %}"></script>
     <script src="{% static 'vendor/bsmultiselect/js/BsMultiSelect.min.js' %}"></script>
-    <script>
-        var chart_map;
-        var buffer_iio = [];
-        var hoy = moment().format("L");
-        var is_realtime = true;
-        var iiodb = new Dexie("iio_database");
-        var nuevasiio = 0;
-        var noSleep = new NoSleep();
-        var LS = window.localStorage;
-        var socket;
-        var is_supervisor = false;
-        {% if request.user|has_group:"supervisores" %} 
-        is_supervisor = true;
-        {% endif %}
-
-        var zodi_tie = [
-            {nombre: "Distrito Capital", codigo: "dc"},
-            {nombre: "Miranda", codigo: "mi"},
-            {nombre: "La Guaira", codigo: "lg"},
-            {nombre: "Vargas", codigo: "lg"},
-            {nombre: "Aragua", codigo: "ar"},
-            {nombre: "Carabobo", codigo: "cb"},
-            {nombre: "Yaracuy", codigo: "ya"},
-            {nombre: "Anzoátegui", codigo: "an"},
-            {nombre: "Monagas", codigo: "mo"},
-            {nombre: "Sucre", codigo: "su"},
-            {nombre: "Falcón", codigo: "fc"},
-            {nombre: "Lara", codigo: "lr"},
-            {nombre: "Zulia", codigo: "zl"},
-            {nombre: "Amazonas", codigo: "am"},
-            {nombre: "Bolívar", codigo: "bo"},
-            {nombre: "Delta Amacuro", codigo: "da"},
-            {nombre: "Apure", codigo: "ap"},
-            {nombre: "Barinas", codigo: "ba"},
-            {nombre: "Cojedes", codigo: "co"},
-            {nombre: "Guárico", codigo: "gu"},
-            {nombre: "Portuguesa", codigo: "pt"},
-            {nombre: "Mérida", codigo: "md"},
-            {nombre: "Táchira", codigo: "tc"},
-            {nombre: "Trujillo", codigo: "tr"},
-            {nombre: "Nueva Esparta", codigo: "ne"},
-            {nombre: "Dependencias Federales", codigo: "df"},
-        ]
-
-        var key_tie = {
-            "aseguramiento de los principales dirigentes de la revolución y c/r": {
-                tie: "TIE 1",
-                color: "#64000038",
-            },
-            "amenazas a la seguridad y defensa de la nación": {
-                tie: "TIE 2",
-                color: "#157B0038",
-            },
-            "aseguramiento de las empresas estratégicas vinculadas al sector energético nacional": {
-                tie: "TIE 3",
-                color: "#38467438",
-            },
-            "aseguramiento de las empresas e instituciones vinculadas al sistema productivo y financiero nacional": {
-                tie: "TIE 4",
-                color: "#B49C0038",
-            },
-            "aseguramiento de las empresas e instituciones vinculadas sistema productivo y financiero nacional": {
-                tie: "TIE 4",
-                color: "#B49C0038",
-            },
-            "otros factores que afectan el orden interno y desarrollo integral de la nación": {
-                tie: "TIE 5",
-                color: "#6B6B6B38",
-            }
-        }
-
-        var key_redi = {
-            "distrito capital": "CAPITAL",
-            "miranda": "CAPITAL",
-            "la guaira": "CAPITAL",
-            "vargas": "CAPITAL",
-
-            "aragua": "CENTRAL",
-            "carabobo": "CENTRAL",
-            "yaracuy": "CENTRAL",
-
-            "anzoátegui": "ORIENTAL",
-            "monagas": "ORIENTAL",
-            "sucre": "ORIENTAL",
-
-            "falcón": "OCCIDENTAL",
-            "lara": "OCCIDENTAL",
-            "zulia": "OCCIDENTAL",
-
-            "amazonas": "GUAYANA",
-            "bolívar": "GUAYANA",
-            "delta amacuro": "GUAYANA",
-
-            "apure": "LOS LLANOS",
-            "barinas": "LOS LLANOS",
-            "cojedes": "LOS LLANOS",
-            "guárico": "LOS LLANOS",
-            "portuguesa": "LOS LLANOS",
-
-            "mérida": "LOS ANDES",
-            "táchira": "LOS ANDES",
-            "trujillo": "LOS ANDES",
-
-            "nueva esparta": "MAIN",
-            "dependencias federales": "MAIN",
-            "zee": "MAIN",
-        }
-
-        iiodb.version(1).stores({
-            iio: '&id,area,descriptiontxt,createtime,disposetime,tematica,subcategory,category,regionid,name,username,nickname,zodi_name,adi_name,parrish_name,priorizado,confirmado,aprobado,allowtime,editmode,isimage'
-        });
-
-        function addinfo(id){
-            $("#dataM").html(id);
-            LS.setItem("id_iio_delete", id);
-        };
-
-        function deleteiio(){
-            var idIIO = LS.getItem('id_iio_delete');
-            $.ajax({
-                url: `{{ config.SERVIDOR_NODEAPI }}/iio/${idIIO}`,
-                type: "DELETE",
-                success: function(resp){
-                    if(!resp.error){
-                        if(resp.data.n === 0){
-                            console.log("¡El elemento no existe!");
-                        }else{
-                            console.log("IIO Eliminada con éxito");
-                            socket.emit("delete_iio", idIIO);
-                        }
-                    }else{
-                        console.log("Error al intentar eliminar la IIO");
-                    }
-                },
-                error: function(err){
-                    console.log("Error al intentar eliminar la IIO");
-                }
-            });
-        };
-
-        $(document).ready(function () {
-            // Enable wake lock.
-            // (must be wrapped in a user input event handler e.g. a mouse or touch handler)
-            socket = io("{{ config.SERVIDOR_NODEAPI }}");
-            document.addEventListener('click', function enableNoSleep() {
-            document.removeEventListener('click', enableNoSleep, false);
-                noSleep.enable();
-            }, false);
-            //Appending HTML5 Audio Tag in HTML Body
-            var audio = new Audio('{% static "audio/pop.mp3" %}');
-            var alerta = new Audio('{% static "audio/alerta.mp3" %}');
-            socket.on("connect", ()=>{
-                console.log("Conectados al Servidor Realtime...")
-                socket.emit("get_iio_init");
-            });
-
-            //Funciones Útiles
-            var vaciarIIOS = ()=>{
-                $("#iios-content").html("");
-                $('.placeholder-iio-wrapper').removeClass("oculto");
-            }
-
-            var updateNotifyIIO = u_cant_iio=>{
-                $("#numiio").html(u_cant_iio);
-            }
-
-            var renderizarIIO = (arrIIO, isRT=false)=>{
-                if (arrIIO.length < 1){
-                    $('.placeholder-iio-wrapper').addClass("oculto");
-                    var alert = `<div class="alert alert-warning text-center">No hay ningún reporte en la fecha seleccionada.</div>`;
-                    $("#iios-content").prepend(alert)
-                }
-                var gfh = tiempo => {
-                    fecha = moment(tiempo).format("L");
-                    hora = moment(tiempo).format("LT");
-                    return fecha + " " + hora
-                }
-
-                try{
-                    arrIIO.map((iio, key)=>{
-                        if(key<500){
-                            cfg_tie = key_tie[iio.tematica];
-                            var iio_html = `
-                            <div class="iio">
-                                <div class="wrap-content">
-                                    <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${is_supervisor ? `<span class="float-right mr-2 btn btn-sm btn-danger cModalDelete" onclick="javascript:addinfo(${iio.id})" data-toggle="modal" data-target="#modalDelete"><i class="fas fa-trash-alt"></i></span> <span class="float-right mr-1 btn btn-sm btn-warning"><i class="fas fa-reply"></i></span> <span class="float-right mr-1 btn btn-sm btn-primary"><i class="fas fa-edit"></i></span>` : ""} </div>
-                                    <div class="row">
-                                        <div class="${iio.isimage ? 'col-8' : "col-12"}">
-                                            <div class="texto-iio"><span>${iio.descriptiontxt}</span></div>
-                                        </div>
-                                    </div>
-                                    <div class="iio-footer" style="background-color: ${cfg_tie.color} !important">
-                                        <div class="tag-ubicacion">REDI ${key_redi[iio.zodi_name.toLowerCase()] + " - " + iio.zodi_name.toUpperCase() + " - " + iio.adi_name.toUpperCase()} <span class="float-right tag-tiempo">${gfh(iio.disposetime)}</span> ${is_supervisor ? `<span class="float-right">${iio.nickname.toUpperCase() + "&nbsp&nbsp-&nbsp&nbsp"}</span>` : ""}</div>
-                                    </div>
-                                </div>
-                            </div>
-                            `
-                            if (isRT){
-                                if(iio.priorizado){
-                                    alerta.play();
-                                }else{
-                                    audio.play();
-                                }
-                                if($(window).scrollTop() > 500){
-                                    buffer_iio.push(iio_html);
-                                    updateNotifyIIO(buffer_iio.length);
-                                }else{
-                                    $("#iios-content").prepend(iio_html)
-                                }
-                            }else{
-                                $("#iios-content").append(iio_html)
-                                $('.placeholder-iio-wrapper').addClass("oculto");
-                            }                            
-                        }
-                    });
-                }catch(err){
-                    console.log("Error:", err);
-                }
-            }
-
-            var cargarIIO = (arrIIO, opciones={titulo_map:hoy})=>{
-                arrIIO.reverse()
-                //Agrupar las IIO del día hoy por zodi
-                iiogZodi = _.groupBy(arrIIO, "zodi_name");
-                iiogTematica = _.groupBy(arrIIO, "tematica");
-
-                st_data = [];
-
-                zodi_tie.forEach(iZodi=>{
-                    if (iiogZodi[iZodi.nombre]){
-                        temp = [];
-                        temp.push(iZodi.codigo);
-                        temp.push(iiogZodi[iZodi.nombre].length);
-                        st_data.push(temp)
-                    }
-                });
-
-                Highcharts.getJSON("{% static 'maps/venezuela4.json' %}", function (geojson) {
-                    // Initiate the chart
-                    chart_map = new Highcharts.mapChart('container', {
-                        chart: {
-                            map: geojson
-                        },
-                        title: {
-                            text: 'IIO ' + opciones.titulo_map
-                        },
-                        mapNavigation: {
-                            enabled: true,
-                        },
-                        colorAxis: {
-                            labels: {
-                                format: '{value}°C'
-                            },
-                            dataClasses: [{
-                                to: 10,
-                                name: '<10 | Deficiente',
-                                color: '#5dade2'
-                            }, {
-                                from: 10,
-                                to: 20,
-                                name: '10-20 | Regular',
-                                color: '#f4d03f'
-                            }, {
-                                from: 20,
-                                to: 30,
-                                name: '20-30 | Bueno',
-                                color: '#2ecc71'
-                            }, {
-                                from: 30,
-                                to: 50,
-                                name: '30-50 | Eficiente',
-                                color: '#e67e22'
-                            }, {
-                                from: 50,
-                                name: '>50 | Excelente',
-                                color: '#c60202'
-                            }]
-                        },
-                        legend: {
-                            title: {
-                                text: 'Informaciones Procesadas',
-                                style: {
-                                    color: ( // theme
-                                        Highcharts.defaultOptions &&
-                                        Highcharts.defaultOptions.legend &&
-                                        Highcharts.defaultOptions.legend.title &&
-                                        Highcharts.defaultOptions.legend.title.style &&
-                                        Highcharts.defaultOptions.legend.title.style.color
-                                    ) || 'black'
-                                }
-                            },
-                            floating: true,
-                            layout: 'vertical',
-                            align: 'left',
-                            verticalAlign: 'bottom',
-                            valueDecimals: 0,
-                            backgroundColor: ( // theme
-                                Highcharts.defaultOptions &&
-                                Highcharts.defaultOptions.legend &&
-                                Highcharts.defaultOptions.legend.backgroundColor
-                            ) || 'rgba(255, 255, 255, 0.85)',
-                        },
-                        series: [{
-                            data: st_data,
-                            keys: ['id', 'value'],
-                            joinBy: 'id',
-                            name: 'Reportes',
-                            states: {
-                                hover: {
-                                    color: '#672421'
-                                }
-                            },
-                            dataLabels: {
-                                enabled: true,
-                                format: '{point.properties.postal}',
-                            },
-                            enableMouseTracking: true
-                        }]
-                    });
-                });
-
-                //Array por IIO
-                tem_data = [];
-                for (gp in iiogTematica){
-                    var objTemp = {};
-                    var kTie = key_tie[gp];
-                    objTemp.tie = kTie.tie;
-                    objTemp.cant = iiogTematica[gp].length;
-                    tem_data.push(objTemp);
-                }
-
-                // Themes begin
-                am4core.useTheme(am4themes_animated);
-                am4core.useTheme(am4themes_moonrisekingdom);
-                // Themes end
-
-                var chart = am4core.create("st_top_tie", am4charts.XYChart);
-                chart.padding(10, 20, 10, 10);
-
-                var categoryAxis = chart.yAxes.push(new am4charts.CategoryAxis());
-                categoryAxis.renderer.grid.template.location = 0;
-                categoryAxis.dataFields.category = "tie";
-                categoryAxis.renderer.minGridDistance = 1;
-                categoryAxis.renderer.inversed = true;
-                categoryAxis.renderer.grid.template.disabled = true;
-
-                var valueAxis = chart.xAxes.push(new am4charts.ValueAxis());
-                valueAxis.min = 0;
-
-                var series = chart.series.push(new am4charts.ColumnSeries());
-                series.dataFields.categoryY = "tie";
-                series.dataFields.valueX = "cant";
-                series.tooltipText = "{valueX.value}"
-                series.columns.template.strokeOpacity = 0;
-                series.columns.template.column.cornerRadiusBottomRight = 5;
-                series.columns.template.column.cornerRadiusTopRight = 5;
-
-                var labelBullet = series.bullets.push(new am4charts.LabelBullet())
-                labelBullet.label.horizontalCenter = "left";
-                labelBullet.label.dx = 10;
-                labelBullet.label.text = "{values.valueX.workingValue.formatNumber('#as')}";
-                labelBullet.locationX = 0;
-
-                // as by default columns of the same series are of the same color, we add adapter which takes colors from chart.colors color set
-                series.columns.template.adapter.add("fill", function(fill, target){
-                    return chart.colors.getIndex(target.dataItem.index);
-                });
-
-                categoryAxis.sortBySeries = series;
-
-                chart.data = tem_data;
-
-                renderizarIIO(arrIIO);
-            }
-
-            $('#acciones input').on('change', async function() {
-                var opcion = $('input[name=options]:checked', '#acciones').val();
-                switch (opcion){
-                    case 'realtime':
-                        is_realtime = true;
-                        nuevasiio = 0;
-                        vaciarIIOS();
-                        // Hoy
-                        var m_hoy = moment(new Date()).format("YYYY-MM-DD");
-                        var iio_realtime = await iiodb.iio.where('disposetime').above(m_hoy).toArray();
-                        cargarIIO(iio_realtime)
-                        break;
-                    case 'ayer':
-                        is_realtime = false;
-                        vaciarIIOS();
-                        // Ayer
-                        var today = new Date();
-                        var hace1dia = new Date(today.getTime());
-                        hace1dia.setDate(today.getDate() - 1);
-                        hace1 = new Date(hace1dia.getFullYear(), hace1dia.getMonth(), hace1dia.getDate());
-                        var unDiaFormat = moment(hace1).format("YYYY-MM-DD");
-                        // Hoy
-                        var m_hoy = moment(new Date()).format("YYYY-MM-DD");
-                        var iio_ayer = await iiodb.iio.where('disposetime').between(unDiaFormat, m_hoy).toArray();
-
-                        cargarIIO(iio_ayer, {titulo_map: moment(hace1).format("L")})
-                        break;
-                    case 'semana':
-                        is_realtime = false;
-                        vaciarIIOS();
-                        // 1 Semana
-                        var today = new Date();
-                        var hace7dia = new Date(today.getTime());
-                        hace7dia.setDate(today.getDate() - 7);
-                        hace7 = new Date(hace7dia.getFullYear(), hace7dia.getMonth(), hace7dia.getDate());
-                        var unaSemanaFormat = moment(hace7).format("YYYY-MM-DD");
-                        // Mañana
-                        var tomorrow = new Date(today.getTime());
-                        tomorrow.setDate(today.getDate() + 1);
-                        toMorrow = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
-                        var tomorrowF = moment(toMorrow).format("YYYY-MM-DD");
-                        var iio_semana = await iiodb.iio.where('disposetime').between(unaSemanaFormat, tomorrowF).toArray();
-
-                        cargarIIO(iio_semana, {titulo_map: moment(hace7).format("L") + " - " + moment(new Date).format("L")})
-                        break;
-                    case 'mes':
-                        is_realtime = false;
-                        vaciarIIOS();
-
-                        // 1 Mes
-                        var today = new Date();
-                        var hace31dia = new Date(today.getTime());
-                        hace31dia.setDate(today.getDate() - 31);
-                        hace31 = new Date(hace31dia.getFullYear(), hace31dia.getMonth(), hace31dia.getDate());
-                        var unMesFormat = moment(hace31).format("YYYY-MM-DD");
-                        // Mañana
-                        var tomorrow = new Date(today.getTime());
-                        tomorrow.setDate(today.getDate() + 1);
-                        toMorrow = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
-                        var tomorrowF = moment(toMorrow).format("YYYY-MM-DD");
-                        var iio_mes = await iiodb.iio.where('disposetime').between(unMesFormat, tomorrowF).toArray();
-
-                        cargarIIO(iio_mes, {titulo_map: moment(hace31).format("L") + " - " + moment(new Date).format("L")})
-                        break;
-                }
-            });
-
-            var guardar_iio = arr_iio=>{
-                try{
-                    arr_iio = arr_iio.filter(item=>{
-                        if (item.subcategory){
-                            return item.subcategory.toLowerCase() !== "no-usar modalidad temporal no-usar";
-                        }
-                    });
-                    m_hoy = moment(new Date()).format("YYYY-MM-DD");
-                    return iiodb.iio.bulkPut(arr_iio).then(()=>{
-                            return iiodb.iio.where('disposetime').above(m_hoy);
-                        }).then(iios=>{
-                            return iios;
-                        }).catch(err=>{
-                            console.log("Error", err);
-                        });
-                }catch(err){
-                    console.log("error: ", err);
-                }
-            }
-            
-            socket.on("r_init_iio", async (data)=>{
-                if(data.data_mes){
-                    //Guardamos las iio en la base de datos
-                    var iio = await guardar_iio(data.data_mes);
-                    iio.toArray(riio=>{
-                        cargarIIO(riio);
-                    })
-                }
-            });
-            socket.on("c_iio", (data)=>{
-            });
-
-            socket.on("s_delete_iio", (sidIIO)=>{
-                console.log("Orden de eliminar la IIO", sidIIO);
-            });
-
-            socket.on("n_iio", (data)=>{
-                if(is_realtime){
-                    iiodb.iio.bulkPut(data).then(()=>{
-                        renderizarIIO(data, true);
-                    }).catch(err=>{
-                        console.log("ERROR NUEVA IIO", err);
-                    });
-                } else {
-                    iiodb.iio.bulkPut(data).then(()=>{
-                        nuevasiio++;
-                        updateNotifyIIO(nuevasiio);
-                    })
-                }
-            });
-
-            $(window).scroll(e=>{
-                if ($(window).scrollTop() < 100){
-                    if (buffer_iio.length > 0){
-                        buffer_iio.map(iio_html=>{
-                            $("#iios-content").prepend(iio_html);
-                            buffer_iio = [];
-                            updateNotifyIIO(buffer_iio.length);
-                        })
-                    }
-                }
-            })
-        });
-    </script>
+    <script src="{% static 'vendor/infinitescroll/infinite-scroll.pkgd.min.js' %}"></script>
     <script src="{% static 'principal/index.js' %}"></script>
+    <script>
+    window.is_supervisor = false;
+    window.audioPop = '{% static "audio/pop.mp3" %}';
+    window.audioAlerta = '{% static "audio/alerta.mp3" %}';
+    window.servidorNodeapi = '{{ config.SERVIDOR_NODEAPI }}';
+    window.mapVenezuela = "{% static 'maps/venezuela4.json' %}";
+    {% if request.user|has_group:"supervisores" %} 
+    is_supervisor = true;
+    {% endif %}
+    </script>
+    <script async src="{% static 'realtime/js/index.js' %}"></script>
 {% endblock extrajs %}

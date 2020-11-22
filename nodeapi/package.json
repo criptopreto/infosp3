@@ -20,7 +20,7 @@
     "mongoose": "^5.10.15",
     "morgan": "~1.9.1",
     "oracledb": "^4.2.0",
-    "socket.io": "^2.3.0",
+    "socket.io": "^3.0.3",
     "socket.io-redis": "^5.4.0"
   }
 }

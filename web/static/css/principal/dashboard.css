@@ -318,3 +318,9 @@
      border-radius: 18px;
      box-shadow: 0 0 4px 0 #35101059;
  }
+
+ .icon-select {
+    color: #797979;
+    text-shadow: 5px 7px 0px #f00;
+    cursor: pointer;
+}
