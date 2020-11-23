@@ -80,10 +80,6 @@ io.on('connection', (socket)=>{
     socket.emit("s_delete_iio", idIIO);
   });
 
-  io.of("/").adapter.clients((err, clients)=>{
-    console.log(clients);
-  })
-
   socket.on("get_iio_init", ()=>{
     console.log("Init...")
     init_iio(socket);
@@ -94,10 +90,11 @@ io.on('connection', (socket)=>{
     console.log("Nueva IIO SEP");
     add_iio(datos_iio)
   });
-});
 
-myEmisor.on("event", datos=>{
-  io.emit("n_iio", datos)
+  myEmisor.on("event", datos=>{
+    console.log("Emitiendo nueva IIO", datos);
+    socket.emit("n_iio", datos)
+  });
 });
 
 setInterval(()=>{
