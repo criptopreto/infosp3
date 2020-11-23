@@ -7,7 +7,14 @@ var nuevasiio = 0;
 var noSleep = new NoSleep();
 var LS = window.localStorage;
 var socket;
+var opcLoadIIO = {
+    numActual: 0,
+    limActual: 10,
+    limAnterior: 0,
+    numTotal: 0
+}
 
+window.iioArray = [];
 
 var zodi_tie = [
     {nombre: "Distrito Capital", codigo: "dc"},
@@ -134,6 +141,85 @@ function deleteiio(){
     });
 };
 
+var controller = new ScrollMagic.Controller();
+
+var scene = new ScrollMagic.Scene({
+    triggerElement: "#loader",
+    triggerHook: "onEnter"
+})
+.addTo(controller)
+.on("enter", function(e){
+    if (!$("#loader").hasClass("active")){
+        $("#loader").addClass("active");
+        renderIIO(window.iioArray);
+    }
+});
+
+var renderIIO = (arrIIO, isRT=false)=>{
+    if (arrIIO && arrIIO.length < 1){
+        $('.placeholder-iio-wrapper').addClass("oculto");
+        var alert = `<div class="alert alert-warning text-center alert-iio">No hay ningún reporte en la fecha seleccionada.</div>`;
+        $("#iios-content").prepend(alert)
+    }else{
+        $(".alert-iio").addClass("oculto");
+    }
+    var gfh = tiempo => {
+        fecha = moment(tiempo).format("L");
+        hora = moment(tiempo).format("LT");
+        return fecha + " " + hora
+    }
+    try{
+        var finJornada = false;
+        arrIIO.map((iio, key)=>{
+            if(key < opcLoadIIO.limActual && key > opcLoadIIO.numActual && finJornada === false){
+                opcLoadIIO.numActual = key;
+                cfg_tie = key_tie[iio.tematica];
+                var iio_html = `
+                <div class="iio iioelement">
+                    <div class="wrap-content">
+                        <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i>` : ""} </div>
+                        <div class="row">
+                            <div class="${iio.isimage ? 'col-8' : "col-12"}">
+                                <div class="texto-iio"><span>${iio.descriptiontxt}</span></div>
+                            </div>
+                        </div>
+                        <div class="iio-footer" style="background-color: ${cfg_tie.color} !important">
+                            <div class="tag-ubicacion">REDI ${key_redi[iio.zodi_name.toLowerCase()] + " - " + iio.zodi_name.toUpperCase() + " - " + iio.adi_name.toUpperCase()} <span class="float-right tag-tiempo">${gfh(iio.disposetime)}</span> ${window.is_supervisor ? `<span class="float-right">${iio.nickname.toUpperCase() + "&nbsp&nbsp-&nbsp&nbsp"}</span>` : ""}</div>
+                        </div>
+                    </div>
+                </div>
+                `
+                if (isRT){
+                    if(iio.priorizado){
+                        alerta.play();
+                    }else{
+                        audio.play();
+                    }
+                    if($(window).scrollTop() > 500){
+                        buffer_iio.push(iio_html);
+                        updateNotifyIIO(buffer_iio.length);
+                    }else{
+                        $("#iios-content").prepend(iio_html)
+                    }
+                }else{
+                    $("#iios-content").append(iio_html)
+                    $('.placeholder-iio-wrapper').addClass("oculto");
+                }                            
+            }else if(key === opcLoadIIO.limActual && finJornada === false){
+                finJornada = true;
+                opcLoadIIO.limActual += 10;
+            }else if(opcLoadIIO.numActual === opcLoadIIO.numTotal - 1){
+                console.log("Fin")
+                $("#loader").addClass("oculto");
+            }
+        });
+    }catch(err){
+        console.log("Error:", err);
+    }
+    scene.update();
+    $("#loader").removeClass("active");
+}
+
 $(document).ready(function () {
     // Enable wake lock.
     // (must be wrapped in a user input event handler e.g. a mouse or touch handler)
@@ -143,12 +229,6 @@ $(document).ready(function () {
         noSleep.enable();
     }, false);
 
-    $(".iiocontainer").infiniteScroll({
-        path=".pagination__next",
-        append: '.iioelement',
-        history: false
-    });
-    
     //Appending HTML5 Audio Tag in HTML Body
     var audio = new Audio(window.audioPop);
     var alerta = new Audio(window.audioAlerta);
@@ -372,12 +452,15 @@ $(document).ready(function () {
         categoryAxis.sortBySeries = series;
 
         chart.data = tem_data;
-
-        renderizarIIO(arrIIO);
+        window.iioArray = arrIIO;
+        opcLoadIIO.numTotal = arrIIO.length;
+        renderIIO(arrIIO);
     }
 
     $('#acciones input').on('change', async function() {
         var opcion = $('input[name=options]:checked', '#acciones').val();
+        window.iioArray = null;
+        $("#loader").removeClass("oculto");
         switch (opcion){
             case 'realtime':
                 is_realtime = true;
@@ -386,7 +469,9 @@ $(document).ready(function () {
                 // Hoy
                 var m_hoy = moment(new Date()).format("YYYY-MM-DD");
                 var iio_realtime = await iiodb.iio.where('disposetime').above(m_hoy).toArray();
-                cargarIIO(iio_realtime)
+                opcLoadIIO.limActual = 10;
+                opcLoadIIO.numActual = 0;
+                cargarIIO(iio_realtime);
                 break;
             case 'ayer':
                 is_realtime = false;
@@ -400,8 +485,9 @@ $(document).ready(function () {
                 // Hoy
                 var m_hoy = moment(new Date()).format("YYYY-MM-DD");
                 var iio_ayer = await iiodb.iio.where('disposetime').between(unDiaFormat, m_hoy).toArray();
-
-                cargarIIO(iio_ayer, {titulo_map: moment(hace1).format("L")})
+                opcLoadIIO.limActual = 10;
+                opcLoadIIO.numActual = 0;
+                cargarIIO(iio_ayer, {titulo_map: moment(hace1).format("L")});
                 break;
             case 'semana':
                 is_realtime = false;
@@ -418,13 +504,13 @@ $(document).ready(function () {
                 toMorrow = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
                 var tomorrowF = moment(toMorrow).format("YYYY-MM-DD");
                 var iio_semana = await iiodb.iio.where('disposetime').between(unaSemanaFormat, tomorrowF).toArray();
-
-                cargarIIO(iio_semana, {titulo_map: moment(hace7).format("L") + " - " + moment(new Date).format("L")})
+                opcLoadIIO.limActual = 10;
+                opcLoadIIO.numActual = 0;
+                cargarIIO(iio_semana, {titulo_map: moment(hace7).format("L") + " - " + moment(new Date).format("L")});
                 break;
             case 'mes':
                 is_realtime = false;
                 vaciarIIOS();
-
                 // 1 Mes
                 var today = new Date();
                 var hace31dia = new Date(today.getTime());
@@ -437,8 +523,9 @@ $(document).ready(function () {
                 toMorrow = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
                 var tomorrowF = moment(toMorrow).format("YYYY-MM-DD");
                 var iio_mes = await iiodb.iio.where('disposetime').between(unMesFormat, tomorrowF).toArray();
-
-                cargarIIO(iio_mes, {titulo_map: moment(hace31).format("L") + " - " + moment(new Date).format("L")})
+                opcLoadIIO.limActual = 10;
+                opcLoadIIO.numActual = 0;
+                cargarIIO(iio_mes, {titulo_map: moment(hace31).format("L") + " - " + moment(new Date).format("L")});
                 break;
         }
     });
@@ -468,6 +555,7 @@ $(document).ready(function () {
             //Guardamos las iio en la base de datos
             var iio = await guardar_iio(data.data_mes);
             iio.toArray(riio=>{
+                opcLoadIIO.limActual = 10;
                 cargarIIO(riio);
             })
         }

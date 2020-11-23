@@ -321,6 +321,9 @@
 
  .icon-select {
     color: #797979;
-    text-shadow: 5px 7px 0px #f00;
     cursor: pointer;
+}
+
+.active {
+    opacity: 1;
 }
