@@ -91,6 +91,7 @@ io.on('connection', (socket)=>{
 
   //Recibimos alerta de que fue cargada una IIO desde la página del SEP
   socket.on("add_iio_sep", datos_iio=>{
+    console.log("Nueva IIO SEP");
     add_iio(datos_iio)
   });
 });
