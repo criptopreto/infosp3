@@ -171,7 +171,7 @@ var renderIIO = (arrIIO, isRT=false)=>{
     try{
         var finJornada = false;
         arrIIO.map((iio, key)=>{
-            if(key < opcLoadIIO.limActual && key > opcLoadIIO.numActual && finJornada === false){
+            if(key < opcLoadIIO.limActual && key >= opcLoadIIO.numActual && finJornada === false){
                 opcLoadIIO.numActual = key;
                 cfg_tie = key_tie[iio.tematica];
                 var iio_html = `
