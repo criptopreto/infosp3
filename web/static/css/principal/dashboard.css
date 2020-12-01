@@ -351,3 +351,29 @@ body {
     top: 200px !important;
     z-index: 1000;
 }
+
+.docs-datepicker-container {
+    border: 1px dashed #eee;
+    display: none;
+    margin: 10px auto;
+    min-height: 160px;
+    position: relative;
+  }
+  
+  .docs-datepicker-container::before {
+    color: #ccc;
+    content: 'Container for inline datepicker';
+    font-size: 12px;
+    left: 50%;
+    line-height: 20px;
+    margin-left: -82px;
+    margin-top: -10px;
+    position: absolute;
+    top: 50%;
+    z-index: -1;
+  }
+  
+  .docs-datepicker-container > .datepicker-container {
+    margin: 10px auto;
+  }
+  

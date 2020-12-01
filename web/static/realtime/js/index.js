@@ -13,6 +13,7 @@ var opcLoadIIO = {
     limAnterior: 0,
     numTotal: 0
 }
+var inicializado = false;
 
 window.iioArray = [];
 
@@ -156,68 +157,70 @@ var scene = new ScrollMagic.Scene({
 });
 
 var renderIIO = (arrIIO, isRT=false)=>{
-    if (arrIIO && arrIIO.length < 1){
-        $('.placeholder-iio-wrapper').addClass("oculto");
-        var alert = `<div class="alert alert-warning text-center alert-iio">No hay ningún reporte en la fecha seleccionada.</div>`;
-        $("#iios-content").prepend(alert)
-    }else{
-        $(".alert-iio").addClass("oculto");
-    }
-    var gfh = tiempo => {
-        fecha = moment(tiempo).format("L");
-        hora = moment(tiempo).format("LT");
-        return fecha + " " + hora
-    }
-    try{
-        var finJornada = false;
-        arrIIO.map((iio, key)=>{
-            if(key < opcLoadIIO.limActual && key >= opcLoadIIO.numActual && finJornada === false){
-                opcLoadIIO.numActual = key;
-                cfg_tie = key_tie[iio.tematica];
-                var iio_html = `
-                <div class="iio iioelement">
-                    <div class="wrap-content">
-                        <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i>` : ""} </div>
-                        <div class="row">
-                            <div class="${iio.isimage ? 'col-8' : "col-12"}">
-                                <div class="texto-iio"><span>${iio.descriptiontxt}</span></div>
+    if (inicializado) {
+        if (arrIIO && arrIIO.length < 1){
+            $('.placeholder-iio-wrapper').addClass("oculto");
+            var alert = `<div class="alert alert-warning text-center alert-iio">No hay ningún reporte en la fecha seleccionada.</div>`;
+            $("#iios-content").prepend(alert)
+        }else{
+            $(".alert-iio").addClass("oculto");
+        }
+        var gfh = tiempo => {
+            fecha = moment(tiempo).format("L");
+            hora = moment(tiempo).format("LT");
+            return fecha + " " + hora
+        }
+        try{
+            var finJornada = false;
+            arrIIO.map((iio, key)=>{
+                if(key < opcLoadIIO.limActual && key >= opcLoadIIO.numActual && finJornada === false){
+                    opcLoadIIO.numActual = key;
+                    cfg_tie = key_tie[iio.tematica];
+                    var iio_html = `
+                    <div class="iio iioelement">
+                        <div class="wrap-content">
+                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i>` : ""} </div>
+                            <div class="row">
+                                <div class="${iio.isimage ? 'col-8' : "col-12"}">
+                                    <div class="texto-iio"><span>${iio.descriptiontxt}</span></div>
+                                </div>
+                            </div>
+                            <div class="iio-footer" style="background-color: ${cfg_tie.color} !important">
+                                <div class="tag-ubicacion">REDI ${key_redi[iio.zodi_name.toLowerCase()] + " - " + iio.zodi_name.toUpperCase() + " - " + iio.adi_name.toUpperCase()} <span class="float-right tag-tiempo">${gfh(iio.disposetime)}</span> ${window.is_supervisor ? `<span class="float-right">${iio.nickname.toUpperCase() + "&nbsp&nbsp-&nbsp&nbsp"}</span>` : ""}</div>
                             </div>
                         </div>
-                        <div class="iio-footer" style="background-color: ${cfg_tie.color} !important">
-                            <div class="tag-ubicacion">REDI ${key_redi[iio.zodi_name.toLowerCase()] + " - " + iio.zodi_name.toUpperCase() + " - " + iio.adi_name.toUpperCase()} <span class="float-right tag-tiempo">${gfh(iio.disposetime)}</span> ${window.is_supervisor ? `<span class="float-right">${iio.nickname.toUpperCase() + "&nbsp&nbsp-&nbsp&nbsp"}</span>` : ""}</div>
-                        </div>
                     </div>
-                </div>
-                `
-                if (isRT){
-                    if(iio.priorizado){
-                        alerta.play();
+                    `
+                    if (isRT){
+                        if(iio.priorizado){
+                            alerta.play();
+                        }else{
+                            audio.play();
+                        }
+                        if($(window).scrollTop() > 500){
+                            buffer_iio.push(iio_html);
+                            updateNotifyIIO(buffer_iio.length);
+                        }else{
+                            $("#iios-content").prepend(iio_html)
+                        }
                     }else{
-                        audio.play();
-                    }
-                    if($(window).scrollTop() > 500){
-                        buffer_iio.push(iio_html);
-                        updateNotifyIIO(buffer_iio.length);
-                    }else{
-                        $("#iios-content").prepend(iio_html)
-                    }
-                }else{
-                    $("#iios-content").append(iio_html)
-                    $('.placeholder-iio-wrapper').addClass("oculto");
-                }                            
-            }else if(key === opcLoadIIO.limActual && finJornada === false){
-                finJornada = true;
-                opcLoadIIO.limActual += 10;
-            }else if(opcLoadIIO.numActual === opcLoadIIO.numTotal - 1){
-                console.log("Fin")
-                $("#loader").addClass("oculto");
-            }
-        });
-    }catch(err){
-        console.log("Error:", err);
+                        $("#iios-content").append(iio_html)
+                        $('.placeholder-iio-wrapper').addClass("oculto");
+                    }                            
+                }else if(key === opcLoadIIO.limActual && finJornada === false){
+                    finJornada = true;
+                    opcLoadIIO.limActual += 10;
+                }else if(opcLoadIIO.numActual === opcLoadIIO.numTotal - 1){
+                    console.log("Fin")
+                    $("#loader").addClass("oculto");
+                }
+            });
+        }catch(err){
+            console.log("Error:", err);
+        }
+        scene.update();
+        $("#loader").removeClass("active");
     }
-    scene.update();
-    $("#loader").removeClass("active");
 }
 
 $(document).ready(function () {
@@ -228,6 +231,13 @@ $(document).ready(function () {
     document.removeEventListener('click', enableNoSleep, false);
         noSleep.enable();
     }, false);
+
+    $('[data-toggle="datepicker"]').datepicker({
+        autoHide: true,
+        zIndex: 2048,
+        inline: true,
+        language: 'es-VE'
+    });
 
     //Appending HTML5 Audio Tag in HTML Body
     var audio = new Audio(window.audioPop);
@@ -553,6 +563,7 @@ $(document).ready(function () {
     socket.on("r_init_iio", async (data)=>{
         if(data.data_mes){
             //Guardamos las iio en la base de datos
+            inicializado = true;
             var iio = await guardar_iio(data.data_mes);
             iio.toArray(riio=>{
                 opcLoadIIO.limActual = 10;

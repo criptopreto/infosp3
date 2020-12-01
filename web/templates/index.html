@@ -5,6 +5,7 @@
 {% block extracss %}
     <link rel="stylesheet" href="{% static 'css/principal/dashboard.css' %}">
     <link rel="stylesheet" href="{% static 'vendor/bsmultiselect/css/BsMultiSelect.min.css' %}">
+    <link rel="stylesheet" href="{% static 'vendor/datepicker/datepicker.min.css' %}">
 {% endblock extracss %}
 
 {% block content %}
@@ -62,7 +63,7 @@
                                                 <input type="radio" name="options" id="mes" value="mes" autocomplete="off"> <i class="fas fa-calendar-alt"></i> Mes
                                             </label>
                                             <label class="btn btn-danger">
-                                                <input type="radio" name="options" id="rango" value="rango" autocomplete="off"> <i class="fas fa-exchange-alt"></i> Rango de Tiempo
+                                                <input type="radio" name="options" id="rango" value="rango" autocomplete="off" data-toggle="modal" data-target="#modalRangoFecha"> <i class="fas fa-exchange-alt"></i> Rango de Tiempo
                                             </label>
                                         </div>
                                         <button type="button" data-toggle="modal" data-target="#modalFiltro" class="btn btn-sm btn-danger float-right"><i class="fas fa-filter"></i> Filtrar</button></h5>
@@ -251,6 +252,46 @@
             </div>
         </div>
     </div>
+
+
+    <!-- Modal Rango Fecha -->
+    <div class="modal fade" id="modalRangoFecha" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="modalRangoFechaLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalRangoFechaLabel">Rango de Recha</span></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-6">
+                        <p>Desde:</p>
+                        <div class="docs-datepicker">
+                            <div class="input-group">
+                                <input type="text" class="form-control docs-date" name="date" placeholder="Fecha Inicio" data-toggle="datepicker" autocomplete="off">
+                                <div class="input-group-append">
+                                <button type="button" class="btn btn-outline-secondary docs-datepicker-trigger" disabled="">
+                                    <i class="fa fa-calendar" aria-hidden="true"></i>
+                                </button>
+                                </div>
+                            </div>
+                            <div class="docs-datepicker-container" style="display: block;"></div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <p>Hasta:</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" onclick="javascript:deleteiio()" class="btn btn-primary">Aceptar</button>
+            </div>
+            </div>
+        </div>
+    </div>
 {% endblock modals %}
 
 {% block extrajs %}
@@ -268,6 +309,7 @@
     <script src="{% static 'vendor/nosleep/nosleep.min.js' %}"></script>
     <script src="{% static 'vendor/bsmultiselect/js/BsMultiSelect.min.js' %}"></script>
     <script src="{% static 'vendor/scrollmagic/ScrollMagic.min.js' %}"></script>
+    <script src="{% static 'vendor/datepicker/datepicker.min.js' %}"></script>
     <script src="{% static 'principal/index.js' %}"></script>
     <script>
     window.is_supervisor = false;
