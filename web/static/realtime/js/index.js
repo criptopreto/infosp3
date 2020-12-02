@@ -155,20 +155,24 @@ async function setRangoFecha(){
     var fechaFinal = LS.getItem("rango_fecha_final");
     var horaInicio = LS.getItem("rango_hora_inicio");
     var horaFinal = LS.getItem("rango_hora_final");
-
-    is_realtime = false;
-    vaciarIIOS();
-    // Rango Personalizado
-    
-    tInicio = moment(new Date(fechaInicio + " " + horaInicio)).format("YYYY-MM-DDTHH:mm:ss.000Z");
-    tFinal = moment(new Date(fechaFinal + " " + horaFinal)).format("YYYY-MM-DDTHH:mm:ss.000Z");
-    console.log(tInicio + " | " + tFinal);
-    //var unaSemanaFormat = moment(hace7).format("YYYY-MM-DD");
-    var iio_semana = await iiodb.iio.where('disposetime').between(tInicio, tFinal).toArray();
-    console.log(iio_semana);
-    opcLoadIIO.limActual = 10;
-    opcLoadIIO.numActual = 0;
-    cargarIIO(iio_semana, {titulo_map: fechaInicio + " " + horaInicio + " - " + fechaFinal + " " + horaFinal});
+    if(!fechaInicio || !fechaFinal || !horaInicio || !horaFinal){
+        alert("Debes llenar todos los campos.");
+    }else{
+        is_realtime = false;
+        vaciarIIOS();
+        // Rango Personalizado
+        
+        tInicio = moment(new Date(fechaInicio + " " + horaInicio)).add(4, 'hour').format("YYYY-MM-DDTHH:mm:ss.000Z");
+        tFinal = moment(new Date(fechaFinal + " " + horaFinal)).add(4, 'hour').format("YYYY-MM-DDTHH:mm:ss.000Z");
+        console.log(tInicio + " | " + tFinal);
+        //var unaSemanaFormat = moment(hace7).format("YYYY-MM-DD");
+        var iio_semana = await iiodb.iio.where('disposetime').between(tInicio, tFinal).toArray();
+        console.log(iio_semana);
+        opcLoadIIO.limActual = 10;
+        opcLoadIIO.numActual = 0;
+        cargarIIO(iio_semana, {titulo_map: fechaInicio + " " + horaInicio + " - " + fechaFinal + " " + horaFinal});
+        $('#modalRangoFecha').modal('hide');
+    }
 }
 
 var controller = new ScrollMagic.Controller();
@@ -408,6 +412,13 @@ var cargarIIO = (arrIIO, opciones={titulo_map:hoy})=>{
     renderIIO(arrIIO);
 }
 
+function limpiarStorage() {
+    LS.removeItem("rango_hora_inicio");
+    LS.removeItem("range_hora_final");
+    LS.removeItem("rango_fecha_inicio");
+    LS.removeItem("range_fecha_final");
+}
+
 $(document).ready(function () {
     $('#modalRangoFecha').on('show.bs.modal', function (event) {
         $("#dateTo").val("");
@@ -415,6 +426,8 @@ $(document).ready(function () {
         $("#timeTo").val("");
         $("#timeFrom").val("");
     });
+
+    limpiarStorage();
 
     socket = io(`${window.servidorNodeapi}`);
     document.addEventListener('click', function enableNoSleep() {
@@ -455,18 +468,14 @@ $(document).ready(function () {
     $('#dateFrom').datepicker({
         autoHide: true,
         zIndex: 2048,
-        inline: true,
         language: 'es-ES',
-        container: '.docs-datepicker-container',
         endDate: new Date
     });
 
     $('#dateTo').datepicker({
         autoHide: true,
         zIndex: 2048,
-        inline: true,
         language: 'es-ES',
-        container: '.docs-datepicker-container-2',
         endDate: new Date
     });
 
