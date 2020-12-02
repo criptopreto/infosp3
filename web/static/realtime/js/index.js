@@ -648,7 +648,7 @@ $(document).ready(function () {
     });
 
     socket.on("n_iio", (data)=>{
-        console.log("Nueva IIO")
+        console.log("Nueva IIO", data)
         if(is_realtime){
             iiodb.iio.bulkPut(data).then(()=>{
                 renderizarIIO(data, true);
