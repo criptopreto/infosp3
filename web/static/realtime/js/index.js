@@ -164,13 +164,11 @@ async function setRangoFecha(){
         
         tInicio = moment(new Date(fechaInicio + " " + horaInicio)).add(4, 'hour').format("YYYY-MM-DDTHH:mm:ss.000Z");
         tFinal = moment(new Date(fechaFinal + " " + horaFinal)).add(4, 'hour').format("YYYY-MM-DDTHH:mm:ss.000Z");
-        console.log(tInicio + " | " + tFinal);
         //var unaSemanaFormat = moment(hace7).format("YYYY-MM-DD");
-        var iio_semana = await iiodb.iio.where('disposetime').between(tInicio, tFinal).toArray();
-        console.log(iio_semana);
+        var iio_rango = await iiodb.iio.where('disposetime').between(tInicio, tFinal).toArray();
         opcLoadIIO.limActual = 10;
         opcLoadIIO.numActual = 0;
-        cargarIIO(iio_semana, {titulo_map: fechaInicio + " " + horaInicio + " - " + fechaFinal + " " + horaFinal});
+        cargarIIO(iio_rango, {titulo_map: fechaInicio + " " + horaInicio + " - " + fechaFinal + " " + horaFinal});
         $('#modalRangoFecha').modal('hide');
     }
 }
@@ -435,8 +433,6 @@ $(document).ready(function () {
         noSleep.enable();
     }, false);
 
-    console.log(new Date, new Date())
-
     $('#timeFrom').mdtimepicker({
         theme: 'red',
         timeFormat: 'hh:mm', 
@@ -657,7 +653,7 @@ $(document).ready(function () {
     });
 
     socket.on("n_iio", (data)=>{
-        console.log("Nueva IIO", data)
+        console.log("Nueva IIO")
         if(is_realtime){
             iiodb.iio.bulkPut(data).then(()=>{
                 renderizarIIO(data, true);
