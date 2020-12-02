@@ -359,8 +359,29 @@ body {
     min-height: 160px;
     position: relative;
   }
+
+  .docs-datepicker-container-2 {
+    border: 1px dashed #eee;
+    display: none;
+    margin: 10px auto;
+    min-height: 160px;
+    position: relative;
+  }
   
   .docs-datepicker-container::before {
+    color: #ccc;
+    content: 'Container for inline datepicker';
+    font-size: 12px;
+    left: 50%;
+    line-height: 20px;
+    margin-left: -82px;
+    margin-top: -10px;
+    position: absolute;
+    top: 50%;
+    z-index: -1;
+  }
+
+  .docs-datepicker-container-2::before {
     color: #ccc;
     content: 'Container for inline datepicker';
     font-size: 12px;
@@ -377,3 +398,10 @@ body {
     margin: 10px auto;
   }
   
+  .docs-datepicker-container-2 > .datepicker-container {
+    margin: 10px auto;
+  }
+
+  .br-d {
+    border-right: 2px dashed #a3a1a1 !important;
+}

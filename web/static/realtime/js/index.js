@@ -14,6 +14,8 @@ var opcLoadIIO = {
     numTotal: 0
 }
 var inicializado = false;
+var range_hora_inicio = "";
+var range_hora_final = "";
 
 window.iioArray = [];
 
@@ -110,6 +112,12 @@ var key_redi = {
     "zee": "MAIN",
 }
 
+//Funciones Útiles
+var vaciarIIOS = ()=>{
+    $("#iios-content").html("");
+    $('.placeholder-iio-wrapper').removeClass("oculto");
+}
+
 iiodb.version(1).stores({
     iio: '&id,area,descriptiontxt,createtime,disposetime,tematica,subcategory,category,regionid,name,username,nickname,zodi_name,adi_name,parrish_name,priorizado,confirmado,aprobado,allowtime,editmode,isimage'
 });
@@ -141,6 +149,27 @@ function deleteiio(){
         }
     });
 };
+
+async function setRangoFecha(){
+    var fechaInicio = LS.getItem("rango_fecha_inicio");
+    var fechaFinal = LS.getItem("rango_fecha_final");
+    var horaInicio = LS.getItem("rango_hora_inicio");
+    var horaFinal = LS.getItem("rango_hora_final");
+
+    is_realtime = false;
+    vaciarIIOS();
+    // Rango Personalizado
+    
+    tInicio = moment(new Date(fechaInicio + " " + horaInicio)).format("YYYY-MM-DDTHH:mm:ss.000Z");
+    tFinal = moment(new Date(fechaFinal + " " + horaFinal)).format("YYYY-MM-DDTHH:mm:ss.000Z");
+    console.log(tInicio + " | " + tFinal);
+    //var unaSemanaFormat = moment(hace7).format("YYYY-MM-DD");
+    var iio_semana = await iiodb.iio.where('disposetime').between(tInicio, tFinal).toArray();
+    console.log(iio_semana);
+    opcLoadIIO.limActual = 10;
+    opcLoadIIO.numActual = 0;
+    cargarIIO(iio_semana, {titulo_map: fechaInicio + " " + horaInicio + " - " + fechaFinal + " " + horaFinal});
+}
 
 var controller = new ScrollMagic.Controller();
 
@@ -223,20 +252,222 @@ var renderIIO = (arrIIO, isRT=false)=>{
     }
 }
 
+var cargarIIO = (arrIIO, opciones={titulo_map:hoy})=>{
+    arrIIO.reverse()
+    //Agrupar las IIO del día hoy por zodi
+    iiogZodi = _.groupBy(arrIIO, "zodi_name");
+    iiogTematica = _.groupBy(arrIIO, "tematica");
+
+    st_data = [];
+
+    zodi_tie.forEach(iZodi=>{
+        if (iiogZodi[iZodi.nombre]){
+            temp = [];
+            temp.push(iZodi.codigo);
+            temp.push(iiogZodi[iZodi.nombre].length);
+            st_data.push(temp)
+        }
+    });
+
+    Highcharts.getJSON(window.mapVenezuela, function (geojson) {
+        // Initiate the chart
+        chart_map = new Highcharts.mapChart('container', {
+            chart: {
+                map: geojson
+            },
+            title: {
+                text: 'IIO ' + opciones.titulo_map
+            },
+            mapNavigation: {
+                enabled: true,
+            },
+            colorAxis: {
+                labels: {
+                    format: '{value}°C'
+                },
+                dataClasses: [{
+                    to: 10,
+                    name: '<10 | Deficiente',
+                    color: '#5dade2'
+                }, {
+                    from: 10,
+                    to: 20,
+                    name: '10-20 | Regular',
+                    color: '#f4d03f'
+                }, {
+                    from: 20,
+                    to: 30,
+                    name: '20-30 | Bueno',
+                    color: '#2ecc71'
+                }, {
+                    from: 30,
+                    to: 50,
+                    name: '30-50 | Eficiente',
+                    color: '#e67e22'
+                }, {
+                    from: 50,
+                    name: '>50 | Excelente',
+                    color: '#c60202'
+                }]
+            },
+            legend: {
+                title: {
+                    text: 'Informaciones Procesadas',
+                    style: {
+                        color: ( // theme
+                            Highcharts.defaultOptions &&
+                            Highcharts.defaultOptions.legend &&
+                            Highcharts.defaultOptions.legend.title &&
+                            Highcharts.defaultOptions.legend.title.style &&
+                            Highcharts.defaultOptions.legend.title.style.color
+                        ) || 'black'
+                    }
+                },
+                floating: true,
+                layout: 'vertical',
+                align: 'left',
+                verticalAlign: 'bottom',
+                valueDecimals: 0,
+                backgroundColor: ( // theme
+                    Highcharts.defaultOptions &&
+                    Highcharts.defaultOptions.legend &&
+                    Highcharts.defaultOptions.legend.backgroundColor
+                ) || 'rgba(255, 255, 255, 0.85)',
+            },
+            series: [{
+                data: st_data,
+                keys: ['id', 'value'],
+                joinBy: 'id',
+                name: 'Reportes',
+                states: {
+                    hover: {
+                        color: '#672421'
+                    }
+                },
+                dataLabels: {
+                    enabled: true,
+                    format: '{point.properties.postal}',
+                },
+                enableMouseTracking: true
+            }]
+        });
+    });
+
+    //Array por IIO
+    tem_data = [];
+    for (gp in iiogTematica){
+        var objTemp = {};
+        var kTie = key_tie[gp];
+        objTemp.tie = kTie.tie;
+        objTemp.cant = iiogTematica[gp].length;
+        tem_data.push(objTemp);
+    }
+
+    // Themes begin
+    am4core.useTheme(am4themes_animated);
+    am4core.useTheme(am4themes_moonrisekingdom);
+    // Themes end
+
+    var chart = am4core.create("st_top_tie", am4charts.XYChart);
+    chart.padding(10, 20, 10, 10);
+
+    var categoryAxis = chart.yAxes.push(new am4charts.CategoryAxis());
+    categoryAxis.renderer.grid.template.location = 0;
+    categoryAxis.dataFields.category = "tie";
+    categoryAxis.renderer.minGridDistance = 1;
+    categoryAxis.renderer.inversed = true;
+    categoryAxis.renderer.grid.template.disabled = true;
+
+    var valueAxis = chart.xAxes.push(new am4charts.ValueAxis());
+    valueAxis.min = 0;
+
+    var series = chart.series.push(new am4charts.ColumnSeries());
+    series.dataFields.categoryY = "tie";
+    series.dataFields.valueX = "cant";
+    series.tooltipText = "{valueX.value}"
+    series.columns.template.strokeOpacity = 0;
+    series.columns.template.column.cornerRadiusBottomRight = 5;
+    series.columns.template.column.cornerRadiusTopRight = 5;
+
+    var labelBullet = series.bullets.push(new am4charts.LabelBullet())
+    labelBullet.label.horizontalCenter = "left";
+    labelBullet.label.dx = 10;
+    labelBullet.label.text = "{values.valueX.workingValue.formatNumber('#as')}";
+    labelBullet.locationX = 0;
+
+    // as by default columns of the same series are of the same color, we add adapter which takes colors from chart.colors color set
+    series.columns.template.adapter.add("fill", function(fill, target){
+        return chart.colors.getIndex(target.dataItem.index);
+    });
+
+    categoryAxis.sortBySeries = series;
+
+    chart.data = tem_data;
+    window.iioArray = arrIIO;
+    opcLoadIIO.numTotal = arrIIO.length;
+    renderIIO(arrIIO);
+}
+
 $(document).ready(function () {
-    // Enable wake lock.
-    // (must be wrapped in a user input event handler e.g. a mouse or touch handler)
+    $('#modalRangoFecha').on('show.bs.modal', function (event) {
+        $("#dateTo").val("");
+        $("#dateFrom").val("");
+        $("#timeTo").val("");
+        $("#timeFrom").val("");
+    });
+
     socket = io(`${window.servidorNodeapi}`);
     document.addEventListener('click', function enableNoSleep() {
     document.removeEventListener('click', enableNoSleep, false);
         noSleep.enable();
     }, false);
 
-    $('[data-toggle="datepicker"]').datepicker({
+    console.log(new Date, new Date())
+
+    $('#timeFrom').mdtimepicker({
+        theme: 'red',
+        timeFormat: 'hh:mm', 
+        format: 'h:mm tt'
+    });
+
+    $('#timeTo').mdtimepicker({
+        theme: 'red',
+        timeFormat: 'hh:mm',
+        format: 'h:mm tt',
+    });
+
+    $("#timeFrom").mdtimepicker().on("timechanged", e=>{
+        LS.setItem("rango_hora_inicio", e.time);
+    });
+
+    $("#timeTo").mdtimepicker().on("timechanged", e=>{
+        LS.setItem("rango_hora_final", e.time);
+    });
+
+    $("#dateFrom").on("pick.datepicker", e=>{
+        LS.setItem("rango_fecha_inicio", moment(e.date).format("YYYY-MM-DD"));
+    });
+
+    $("#dateTo").on("pick.datepicker", e=>{
+        LS.setItem("rango_fecha_final", moment(e.date).format("YYYY-MM-DD"));
+    });
+
+    $('#dateFrom').datepicker({
         autoHide: true,
         zIndex: 2048,
         inline: true,
-        language: 'es-VE'
+        language: 'es-ES',
+        container: '.docs-datepicker-container',
+        endDate: new Date
+    });
+
+    $('#dateTo').datepicker({
+        autoHide: true,
+        zIndex: 2048,
+        inline: true,
+        language: 'es-ES',
+        container: '.docs-datepicker-container-2',
+        endDate: new Date
     });
 
     //Appending HTML5 Audio Tag in HTML Body
@@ -246,12 +477,6 @@ $(document).ready(function () {
         console.log("Conectados al Servidor Realtime...")
         socket.emit("get_iio_init");
     });
-
-    //Funciones Útiles
-    var vaciarIIOS = ()=>{
-        $("#iios-content").html("");
-        $('.placeholder-iio-wrapper').removeClass("oculto");
-    }
 
     var updateNotifyIIO = u_cant_iio=>{
         $("#numiio").html(u_cant_iio);
@@ -310,163 +535,7 @@ $(document).ready(function () {
             console.log("Error:", err);
         }
     }
-
-    var cargarIIO = (arrIIO, opciones={titulo_map:hoy})=>{
-        arrIIO.reverse()
-        //Agrupar las IIO del día hoy por zodi
-        iiogZodi = _.groupBy(arrIIO, "zodi_name");
-        iiogTematica = _.groupBy(arrIIO, "tematica");
-
-        st_data = [];
-
-        zodi_tie.forEach(iZodi=>{
-            if (iiogZodi[iZodi.nombre]){
-                temp = [];
-                temp.push(iZodi.codigo);
-                temp.push(iiogZodi[iZodi.nombre].length);
-                st_data.push(temp)
-            }
-        });
-
-        Highcharts.getJSON(window.mapVenezuela, function (geojson) {
-            // Initiate the chart
-            chart_map = new Highcharts.mapChart('container', {
-                chart: {
-                    map: geojson
-                },
-                title: {
-                    text: 'IIO ' + opciones.titulo_map
-                },
-                mapNavigation: {
-                    enabled: true,
-                },
-                colorAxis: {
-                    labels: {
-                        format: '{value}°C'
-                    },
-                    dataClasses: [{
-                        to: 10,
-                        name: '<10 | Deficiente',
-                        color: '#5dade2'
-                    }, {
-                        from: 10,
-                        to: 20,
-                        name: '10-20 | Regular',
-                        color: '#f4d03f'
-                    }, {
-                        from: 20,
-                        to: 30,
-                        name: '20-30 | Bueno',
-                        color: '#2ecc71'
-                    }, {
-                        from: 30,
-                        to: 50,
-                        name: '30-50 | Eficiente',
-                        color: '#e67e22'
-                    }, {
-                        from: 50,
-                        name: '>50 | Excelente',
-                        color: '#c60202'
-                    }]
-                },
-                legend: {
-                    title: {
-                        text: 'Informaciones Procesadas',
-                        style: {
-                            color: ( // theme
-                                Highcharts.defaultOptions &&
-                                Highcharts.defaultOptions.legend &&
-                                Highcharts.defaultOptions.legend.title &&
-                                Highcharts.defaultOptions.legend.title.style &&
-                                Highcharts.defaultOptions.legend.title.style.color
-                            ) || 'black'
-                        }
-                    },
-                    floating: true,
-                    layout: 'vertical',
-                    align: 'left',
-                    verticalAlign: 'bottom',
-                    valueDecimals: 0,
-                    backgroundColor: ( // theme
-                        Highcharts.defaultOptions &&
-                        Highcharts.defaultOptions.legend &&
-                        Highcharts.defaultOptions.legend.backgroundColor
-                    ) || 'rgba(255, 255, 255, 0.85)',
-                },
-                series: [{
-                    data: st_data,
-                    keys: ['id', 'value'],
-                    joinBy: 'id',
-                    name: 'Reportes',
-                    states: {
-                        hover: {
-                            color: '#672421'
-                        }
-                    },
-                    dataLabels: {
-                        enabled: true,
-                        format: '{point.properties.postal}',
-                    },
-                    enableMouseTracking: true
-                }]
-            });
-        });
-
-        //Array por IIO
-        tem_data = [];
-        for (gp in iiogTematica){
-            var objTemp = {};
-            var kTie = key_tie[gp];
-            objTemp.tie = kTie.tie;
-            objTemp.cant = iiogTematica[gp].length;
-            tem_data.push(objTemp);
-        }
-
-        // Themes begin
-        am4core.useTheme(am4themes_animated);
-        am4core.useTheme(am4themes_moonrisekingdom);
-        // Themes end
-
-        var chart = am4core.create("st_top_tie", am4charts.XYChart);
-        chart.padding(10, 20, 10, 10);
-
-        var categoryAxis = chart.yAxes.push(new am4charts.CategoryAxis());
-        categoryAxis.renderer.grid.template.location = 0;
-        categoryAxis.dataFields.category = "tie";
-        categoryAxis.renderer.minGridDistance = 1;
-        categoryAxis.renderer.inversed = true;
-        categoryAxis.renderer.grid.template.disabled = true;
-
-        var valueAxis = chart.xAxes.push(new am4charts.ValueAxis());
-        valueAxis.min = 0;
-
-        var series = chart.series.push(new am4charts.ColumnSeries());
-        series.dataFields.categoryY = "tie";
-        series.dataFields.valueX = "cant";
-        series.tooltipText = "{valueX.value}"
-        series.columns.template.strokeOpacity = 0;
-        series.columns.template.column.cornerRadiusBottomRight = 5;
-        series.columns.template.column.cornerRadiusTopRight = 5;
-
-        var labelBullet = series.bullets.push(new am4charts.LabelBullet())
-        labelBullet.label.horizontalCenter = "left";
-        labelBullet.label.dx = 10;
-        labelBullet.label.text = "{values.valueX.workingValue.formatNumber('#as')}";
-        labelBullet.locationX = 0;
-
-        // as by default columns of the same series are of the same color, we add adapter which takes colors from chart.colors color set
-        series.columns.template.adapter.add("fill", function(fill, target){
-            return chart.colors.getIndex(target.dataItem.index);
-        });
-
-        categoryAxis.sortBySeries = series;
-
-        chart.data = tem_data;
-        window.iioArray = arrIIO;
-        opcLoadIIO.numTotal = arrIIO.length;
-        renderIIO(arrIIO);
-    }
-
+    
     $('#acciones input').on('change', async function() {
         var opcion = $('input[name=options]:checked', '#acciones').val();
         window.iioArray = null;

@@ -6,6 +6,8 @@
     <link rel="stylesheet" href="{% static 'css/principal/dashboard.css' %}">
     <link rel="stylesheet" href="{% static 'vendor/bsmultiselect/css/BsMultiSelect.min.css' %}">
     <link rel="stylesheet" href="{% static 'vendor/datepicker/datepicker.min.css' %}">
+    <link rel="stylesheet" href="{% static 'vendor/mdtime/mdtimepicker.min.css' %}">
+    <link rel="stylesheet" href="{% static 'vendor/mdtime/mdtimepicker-theme.css' %}">
 {% endblock extracss %}
 
 {% block content %}
@@ -259,18 +261,18 @@
         <div class="modal-dialog">
             <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalRangoFechaLabel">Rango de Recha</span></h5>
+                <h5 class="modal-title" id="modalRangoFechaLabel">Rango de Fecha</span></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="row">
-                    <div class="col-6">
-                        <p>Desde:</p>
+                    <div class="col-6 br-d">
+                        <p><b>Fecha Inicio:</b></p>
                         <div class="docs-datepicker">
                             <div class="input-group">
-                                <input type="text" class="form-control docs-date" name="date" placeholder="Fecha Inicio" data-toggle="datepicker" autocomplete="off">
+                                <input type="text" class="form-control docs-date" name="datFrom" id="dateFrom" placeholder="Fecha Inicio" data-toggle="datepicker" autocomplete="off">
                                 <div class="input-group-append">
                                 <button type="button" class="btn btn-outline-secondary docs-datepicker-trigger" disabled="">
                                     <i class="fa fa-calendar" aria-hidden="true"></i>
@@ -279,15 +281,34 @@
                             </div>
                             <div class="docs-datepicker-container" style="display: block;"></div>
                         </div>
+                        <p><b>Hora Inicio:</b></p>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="timeFrom" placeholder="Hora Inicio"/>
+                        </div>
                     </div>
                     <div class="col-6">
-                        <p>Hasta:</p>
+                        <p><b>Fecha Final:</b></p>
+                        <div class="docs-datepicker">
+                            <div class="input-group">
+                                <input type="text" class="form-control docs-date" name="dateTo" id="dateTo"  placeholder="Fecha Final" data-toggle="datepicker" autocomplete="off">
+                                <div class="input-group-append">
+                                <button type="button" class="btn btn-outline-secondary docs-datepicker-trigger" disabled="">
+                                    <i class="fa fa-calendar" aria-hidden="true"></i>
+                                </button>
+                                </div>
+                            </div>
+                            <div class="docs-datepicker-container-2" style="display: block;"></div>
+                        </div>
+                        <p><b>Hora Final:</b></p>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="timeTo" placeholder="Hora Final"/>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button type="button" onclick="javascript:deleteiio()" class="btn btn-primary">Aceptar</button>
+                <button type="button" onclick="javascript:setRangoFecha()" class="btn btn-danger">Aceptar</button>
             </div>
             </div>
         </div>
@@ -310,6 +331,8 @@
     <script src="{% static 'vendor/bsmultiselect/js/BsMultiSelect.min.js' %}"></script>
     <script src="{% static 'vendor/scrollmagic/ScrollMagic.min.js' %}"></script>
     <script src="{% static 'vendor/datepicker/datepicker.min.js' %}"></script>
+    <script src="{% static 'vendor/mdtime/mdtimepicker.min.js' %}"></script>
+    <script src="{% static 'vendor/datepicker/datepicker.es-ES.js' %}"></script>
     <script src="{% static 'principal/index.js' %}"></script>
     <script>
     window.is_supervisor = false;
