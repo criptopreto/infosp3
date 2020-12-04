@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="{% static 'vendor/datepicker/datepicker.min.css' %}">
     <link rel="stylesheet" href="{% static 'vendor/mdtime/mdtimepicker.min.css' %}">
     <link rel="stylesheet" href="{% static 'vendor/mdtime/mdtimepicker-theme.css' %}">
+    <link rel="stylesheet" href="{% static 'vendor/select2/select2.min.css' %}">
 {% endblock extracss %}
 
 {% block content %}
@@ -205,10 +206,101 @@
                 </button>
             </div>
             <div class="modal-body">
-                Agregar Filtro por Territorio:
+                <div class="row">
+                    <div class="col-12">
+                        <p><b>Filtro por Territorio:</b></p>
+                        <select name="fzodi[]" id="fzodi" class="js-example-basic-multiple w-100" multiple="multiple">
+                            <optgroup label="REDI CAPITAL" data-select2-id="select2-capital">
+                                <option value="Distrito Capital">Distrito Capital</option>
+                                <option value="Miranda">Miranda</option>
+                                <option value="La Guaira">La Guaira</option>
+                            </optgroup>
+                            <optgroup label="REDI CENTRAL" data-select2-id="select2-central">
+                                <option value="Aragua">Aragua</option>
+                                <option value="Carabobo">Carabobo</option>
+                                <option value="Yaracuy">Yaracuy</option>
+                            </optgroup>
+
+                            <optgroup label="REDI OCCIDENTAL" data-select2-id="select2-occidental">
+                                <option value="Falcón">Falcón</option>
+                                <option value="Lara">Lara</option>
+                                <option value="Zulia">Zulia</option>
+                            </optgroup>
+
+                            <optgroup label="REDI ORIENTAL" data-select2-id="select2-oriental">
+                                <option value="Anzoátegui">Anzoátegui</option>
+                                <option value="Monagas">Monagas</option>
+                                <option value="Sucre">Sucre</option>
+                            </optgroup>
+
+                            <optgroup label="REDI LOS ANDES" data-select2-id="select2-andes">
+                                <option value="Mérida">Mérida</option>
+                                <option value="Táchira">Táchira</option>
+                                <option value="Trujillo">Trujillo</option>
+                            </optgroup>
+
+                            <optgroup label="REDI LOS LLANOS" data-select2-id="select2-llanos">
+                                <option value="Apure">Apure</option>
+                                <option value="Barinas">Barinas</option>
+                                <option value="Cojedes">Cojedes</option>
+                                <option value="Guárico">Guárico</option>
+                                <option value="Portuguesa">Portuguesa</option>
+                            </optgroup>
+
+                            <optgroup label="REDI GUAYANA" data-select2-id="select2-guayana">
+                                <option value="Amazonas">Amazonas</option>
+                                <option value="Bolívar">Bolívar</option>
+                                <option value="Delta Amacuro">Delta Amacuro</option>
+                            </optgroup>
+
+                            <optgroup label="REDI MAIN" data-select2-id="select2-main">
+                                <option value="Nueva Esparta">Nueva Esparta</option>
+                            </optgroup>
+                        </select>
+                        <p><b>Filtro por Temática:</b></p>
+                        <select name="ftematica[]" id="ftematica" class="js-example-basic-multiple w-100" multiple="multiple">
+                            <option value="TIE1">ASEGURAMIENTO DE LOS PRINCIPALES DIRIGENTES DE LA REVOLUCIÓN Y C/R</option>
+                            <option value="TIE2">AMENAZAS A LA SEGURIDAD Y DEFENSA DE LA NACIÓN</option>
+                            <option value="TIE3">ASEGURAMIENTO DE LAS EMPRESAS ESTRATÉGICAS VINCULADAS AL SECTOR ENERGÉTICO NACIONAL</option>
+                            <option value="TIE4">ASEGURAMIENTO DE LAS EMPRESAS E INSTITUCIONES VINCULADAS AL SISTEMA PRODUCTIVO Y FINANCIERO NACIONAL</option>
+                            <option value="TIE5">OTROS FACTORES QUE AFECTAN EL ORDEN INTERNO Y DESARROLLO INTEGRAL DE LA NACIÓN</option>
+                        </select>
+                        <p><b>Filtro por Modalidad:</b></p>
+                        <select name="fmodalidad[]" id="fmodalidad" class="js-example-basic-multiple w-100" multiple="multiple">
+                            <optgroup label="TIE1" data-select2-id="select2-tie1">
+                                <option value="Distrito Capital">Distrito Capital</option>
+                                <option value="Miranda">Miranda</option>
+                                <option value="La Guaira">La Guaira</option>
+                            </optgroup>
+                            <optgroup label="TIE2" data-select2-id="select2-tie2">
+                                <option value="Aragua">Aragua</option>
+                                <option value="Carabobo">Carabobo</option>
+                                <option value="Yaracuy">Yaracuy</option>
+                            </optgroup>
+
+                            <optgroup label="TIE3" data-select2-id="select2-tie3">
+                                <option value="Falcón">Falcón</option>
+                                <option value="Lara">Lara</option>
+                                <option value="Zulia">Zulia</option>
+                            </optgroup>
+
+                            <optgroup label="TIE4" data-select2-id="select2-tie4">
+                                <option value="Anzoátegui">Anzoátegui</option>
+                                <option value="Monagas">Monagas</option>
+                                <option value="Sucre">Sucre</option>
+                            </optgroup>
+
+                            <optgroup label="TIE5" data-select2-id="select2-tie5">
+                                <option value="Mérida">Mérida</option>
+                                <option value="Táchira">Táchira</option>
+                                <option value="Trujillo">Trujillo</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-danger" data-dismiss="modal">Aceptar</button>
+                <button type="button" class="btn btn-danger" onclick="javascript:aplicarFiltro()" data-dismiss="modal">Aceptar</button>
             </div>
             </div>
         </div>
@@ -331,6 +423,7 @@
     <script src="{% static 'vendor/datepicker/datepicker.min.js' %}"></script>
     <script src="{% static 'vendor/mdtime/mdtimepicker.min.js' %}"></script>
     <script src="{% static 'vendor/datepicker/datepicker.es-ES.js' %}"></script>
+    <script src="{% static 'vendor/select2/select2.min.js' %}"></script>
     <script src="{% static 'principal/index.js' %}"></script>
     <script>
     window.is_supervisor = false;
