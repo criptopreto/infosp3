@@ -427,13 +427,19 @@
     <script src="{% static 'principal/index.js' %}"></script>
     <script>
     window.is_supervisor = false;
+    window.is_milicia = false;
     window.audioPop = '{% static "audio/pop.mp3" %}';
     window.audioAlerta = '{% static "audio/alerta.mp3" %}';
     window.servidorNodeapi = '{{ config.SERVIDOR_NODEAPI }}';
     window.mapVenezuela = "{% static 'maps/venezuela4.json' %}";
     {% if request.user|has_group:"supervisores" %} 
-    is_supervisor = true;
+    window.is_supervisor = true;
     {% endif %}
+
+    {% if request.user|has_group:"MILICIA"%}
+    window.is_milicia = true;
+    {% endif %}
+
     </script>
     <script async src="{% static 'realtime/js/index.js' %}"></script>
 {% endblock extrajs %}

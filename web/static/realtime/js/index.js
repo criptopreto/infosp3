@@ -27,6 +27,8 @@ var tituloActivo;
 
 window.iioArray = [];
 
+var finCarga = false;
+
 var zodi_tie = [
     {nombre: "Distrito Capital", codigo: "dc"},
     {nombre: "Miranda", codigo: "mi"},
@@ -122,7 +124,7 @@ var key_redi = {
 
 //Funciones Útiles
 var vaciarIIOS = ()=>{
-    $("#iios-content").html("");
+    $("#iios-content").empty();
     $('.placeholder-iio-wrapper').removeClass("oculto");
 }
 
@@ -166,54 +168,38 @@ async function setRangoFecha(){
     if(!fechaInicio || !fechaFinal || !horaInicio || !horaFinal){
         alert("Debes llenar todos los campos.");
     }else{
-        is_realtime = false;
-        vaciarIIOS();
         // Rango Personalizado
-        
-        tInicio = moment(new Date(fechaInicio + " " + horaInicio)).add(4, 'hour').format("YYYY-MM-DDTHH:mm:ss.000Z");
-        tFinal = moment(new Date(fechaFinal + " " + horaFinal)).add(4, 'hour').format("YYYY-MM-DDTHH:mm:ss.000Z");
-        //var unaSemanaFormat = moment(hace7).format("YYYY-MM-DD");
-        var iio_rango = await iiodb.iio.where('disposetime').between(tInicio, tFinal).toArray();
-        opcLoadIIO.limActual = 10;
-        opcLoadIIO.numActual = 0;
-        cargarIIO(iio_rango, {titulo_map: fechaInicio + " " + horaInicio + " - " + fechaFinal + " " + horaFinal});
+        window.iioArray = null;
+        rangoActivo = [];
+        opcionActiva = 5;
+        rangoActivo.push(moment(new Date(fechaInicio + " " + horaInicio)).add(4, 'hour').format("YYYY-MM-DDTHH:mm:ss.000Z"));
+        rangoActivo.push(moment(new Date(fechaFinal + " " + horaFinal)).add(4, 'hour').format("YYYY-MM-DDTHH:mm:ss.000Z"));
+
+        console.log(rangoActivo);
+        aplicarOpcion(rangoActivo, fechaInicio + " " + horaInicio + " - " + fechaFinal + " " + horaFinal);
         $('#modalRangoFecha').modal('hide');
     }
 }
-
-var controller = new ScrollMagic.Controller();
-
-var scene = new ScrollMagic.Scene({
-    triggerElement: "#loader",
-    triggerHook: "onEnter"
-})
-.addTo(controller)
-.on("enter", function(e){
-    if (!$("#loader").hasClass("active")){
-        $("#loader").addClass("active");
-        renderIIO(window.iioArray);
-    }
-});
 
 var renderIIO = (arrIIO, isRT=false)=>{
     if (inicializado) {
         if (arrIIO && arrIIO.length < 1){
             $('.placeholder-iio-wrapper').addClass("oculto");
             var alert = `<div class="alert alert-warning text-center alert-iio">No hay ningún reporte en la fecha seleccionada.</div>`;
-            $("#iios-content").prepend(alert)
+            $("#iios-content").html(alert)
+            $("#loader").addClass("oculto");
         }else{
             $(".alert-iio").addClass("oculto");
-        }
-        var gfh = tiempo => {
-            fecha = moment(tiempo).format("L");
-            hora = moment(tiempo).format("LT");
-            return fecha + " " + hora
         }
         try{
             var finJornada = false;
             arrIIO.map((iio, key)=>{
-                console.log(opcLoadIIO.numActual)
-                if(key < opcLoadIIO.limActual && key >= opcLoadIIO.numActual && finJornada === false){
+                if(key < opcLoadIIO.limActual && key >= opcLoadIIO.numActual && finJornada === false && !finCarga){
+                    var gfh = tiempo => {
+                        fecha = moment(tiempo).format("L");
+                        hora = moment(tiempo).format("LT");
+                        return fecha + " " + hora
+                    }
                     opcLoadIIO.numActual = key;
                     cfg_tie = key_tie[iio.tematica];
                     var iio_html = `
@@ -250,29 +236,29 @@ var renderIIO = (arrIIO, isRT=false)=>{
                 }else if(key === opcLoadIIO.limActual && finJornada === false){
                     finJornada = true;
                     opcLoadIIO.limActual += 10;
-                }else if(opcLoadIIO.numActual === opcLoadIIO.numTotal - 1){
-                    console.log("Fin")
+                }else if(opcLoadIIO.numActual === opcLoadIIO.numTotal - 1 && !finCarga){
+                    finCarga = true;
                     $("#loader").addClass("oculto");
                 }
             });
         }catch(err){
             console.log("Error:", err);
         }
-        scene.update();
-        $("#loader").removeClass("active");
     }
 }
 
 var cargarIIO = (arrIIO, opciones={titulo_map:hoy})=>{
-    arrIIO.reverse()
+    arrIIO.reverse();
 
     //APLICAR FILTROS
-    console.log(filtrosZodi);
     if (filtrosZodi.length > 0){
         arrIIO = arrIIO.filter(IIO=>filtrosZodi.includes(IIO.zodi_name));
     }
 
-    console.log(arrIIO);
+    //APLICAR FILTRO MILICIA
+    if (window.is_milicia) {
+        arrIIO = arrIIO.filter(IIO=>IIO.redi_name === 'MILICIA');
+    }
     
     //Agrupar las IIO del día hoy por zodi
     iiogZodi = _.groupBy(arrIIO, "zodi_name");
@@ -436,8 +422,8 @@ function limpiarStorage() {
 }
 
 async function aplicarOpcion(rangoTiempo=[], titulo_map) {
-    console.log(rangoTiempo);
     vaciarIIOS();
+    finCarga = false;
     opcLoadIIO.limActual = 10;
     opcLoadIIO.numActual = 0;
     var iio_rango;
@@ -457,8 +443,6 @@ function aplicarFiltro() {
     $("#fzodi").find(":selected").each((key, element)=>{
         filtrosZodi.push(element.value);
     });
-    console.log(filtrosZodi,opcionActiva);
-
     switch (opcionActiva) {
         case 1:
             $("#realtime").click();
@@ -611,62 +595,65 @@ $(document).ready(function () {
     $('#acciones input').on('change', async function() {
         var opcion = $('input[name=options]:checked', '#acciones').val();
         window.iioArray = null;
-        $("#loader").removeClass("oculto");
-        rangoActivo = [];
-        tituloActivo = "";
-        switch (opcion){
-            case 'realtime':
-                opcionActiva = 1;
-                nuevasiio = 0;
-                // Hoy
-                rangoActivo.push(moment(new Date()).format("YYYY-MM-DD"));
-                tituloActivo = moment(new Date()).format("YYYY-MM-DD");
-                break;
-            case 'ayer':
-                opcionActiva = 2;
-                // Ayer
-                var today = new Date();
-                var hace1dia = new Date(today.getTime());
-                hace1dia.setDate(today.getDate() - 1);
-                hace1 = new Date(hace1dia.getFullYear(), hace1dia.getMonth(), hace1dia.getDate());
+        if (opcion === 'rango'){
 
-                rangoActivo.push(moment(hace1).format("YYYY-MM-DD"));
-                rangoActivo.push(moment(new Date()).format("YYYY-MM-DD"));
-                tituloActivo = moment(new Date()).format("YYYY-MM-DD") + " - " + moment(new Date()).format("YYYY-MM-DD");
-                break;
-            case 'semana':
-                opcionActiva = 3;
-                // 1 Semana
-                var today = new Date();
-                var hace7dia = new Date(today.getTime());
-                hace7dia.setDate(today.getDate() - 7);
-                hace7 = new Date(hace7dia.getFullYear(), hace7dia.getMonth(), hace7dia.getDate());
-                rangoActivo.push(moment(hace7).format("YYYY-MM-DD"));
-                // Mañana
-                var tomorrow = new Date(today.getTime());
-                tomorrow.setDate(today.getDate() + 1);
-                toMorrow = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
-                rangoActivo.push(moment(toMorrow).format("YYYY-MM-DD"));
-                tituloActivo = moment(hace7).format("YYYY-MM-DD") + " - " + moment(toMorrow).format("YYYY-MM-DD");
-                break;
-            case 'mes':
-                opcionActiva = 4;
-                // 1 Mes
-                var today = new Date();
-                var hace31dia = new Date(today.getTime());
-                hace31dia.setDate(today.getDate() - 31);
-                hace31 = new Date(hace31dia.getFullYear(), hace31dia.getMonth(), hace31dia.getDate());
-                rangoActivo.push(moment(hace31).format("YYYY-MM-DD"));
-                // Mañana
-                var tomorrow = new Date(today.getTime());
-                tomorrow.setDate(today.getDate() + 1);
-                toMorrow = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
-                rangoActivo.push(moment(toMorrow).format("YYYY-MM-DD"));
-                tituloActivo = moment(hace31).format("YYYY-MM-DD") + " - " + moment(toMorrow).format("YYYY-MM-DD");
-                break;
+        }else{
+            $("#loader").removeClass("oculto");
+            rangoActivo = [];
+            tituloActivo = "";
+            switch (opcion){
+                case 'realtime':
+                    opcionActiva = 1;
+                    nuevasiio = 0;
+                    // Hoy
+                    rangoActivo.push(moment(new Date()).format("YYYY-MM-DD"));
+                    tituloActivo = moment(new Date()).format("YYYY-MM-DD");
+                    break;
+                case 'ayer':
+                    opcionActiva = 2;
+                    // Ayer
+                    var today = new Date();
+                    var hace1dia = new Date(today.getTime());
+                    hace1dia.setDate(today.getDate() - 1);
+                    hace1 = new Date(hace1dia.getFullYear(), hace1dia.getMonth(), hace1dia.getDate());
+
+                    rangoActivo.push(moment(hace1).format("YYYY-MM-DD"));
+                    rangoActivo.push(moment(new Date()).format("YYYY-MM-DD"));
+                    tituloActivo = moment(new Date()).format("YYYY-MM-DD") + " - " + moment(new Date()).format("YYYY-MM-DD");
+                    break;
+                case 'semana':
+                    opcionActiva = 3;
+                    // 1 Semana
+                    var today = new Date();
+                    var hace7dia = new Date(today.getTime());
+                    hace7dia.setDate(today.getDate() - 7);
+                    hace7 = new Date(hace7dia.getFullYear(), hace7dia.getMonth(), hace7dia.getDate());
+                    rangoActivo.push(moment(hace7).format("YYYY-MM-DD"));
+                    // Mañana
+                    var tomorrow = new Date(today.getTime());
+                    tomorrow.setDate(today.getDate() + 1);
+                    toMorrow = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
+                    rangoActivo.push(moment(toMorrow).format("YYYY-MM-DD"));
+                    tituloActivo = moment(hace7).format("YYYY-MM-DD") + " - " + moment(toMorrow).format("YYYY-MM-DD");
+                    break;
+                case 'mes':
+                    opcionActiva = 4;
+                    // 1 Mes
+                    var today = new Date();
+                    var hace31dia = new Date(today.getTime());
+                    hace31dia.setDate(today.getDate() - 31);
+                    hace31 = new Date(hace31dia.getFullYear(), hace31dia.getMonth(), hace31dia.getDate());
+                    rangoActivo.push(moment(hace31).format("YYYY-MM-DD"));
+                    // Mañana
+                    var tomorrow = new Date(today.getTime());
+                    tomorrow.setDate(today.getDate() + 1);
+                    toMorrow = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
+                    rangoActivo.push(moment(toMorrow).format("YYYY-MM-DD"));
+                    tituloActivo = moment(hace31).format("YYYY-MM-DD") + " - " + moment(toMorrow).format("YYYY-MM-DD");
+                    break;
+            }
+            aplicarOpcion(rangoActivo, tituloActivo);
         }
-
-        aplicarOpcion(rangoActivo, tituloActivo);
     });
 
     var guardar_iio = arr_iio=>{
@@ -694,8 +681,13 @@ $(document).ready(function () {
             //Guardamos las iio en la base de datos
             inicializado = true;
             var iio = await guardar_iio(data.data_mes);
+            opcionActiva = 1;
+            nuevasiio = 0;
+            // Hoy
+            rangoActivo.push(moment(new Date()).format("YYYY-MM-DD"));
+            tituloActivo = moment(new Date()).format("YYYY-MM-DD");
             iio.toArray(riio=>{
-                opcLoadIIO.limActual = 10;
+                
                 cargarIIO(riio);
             })
         }
@@ -708,7 +700,6 @@ $(document).ready(function () {
     });
 
     socket.on("n_iio", (data)=>{
-        console.log("Nueva IIO")
         if(is_realtime){
             iiodb.iio.bulkPut(data).then(()=>{
                 renderizarIIO(data, true);
@@ -732,6 +723,9 @@ $(document).ready(function () {
                     updateNotifyIIO(buffer_iio.length);
                 })
             }
+        }
+        if ($(window).scrollTop() >= $(document).height() - $(window).height() - 500 && !finCarga){
+            renderIIO(window.iioArray);
         }
     })
 });
