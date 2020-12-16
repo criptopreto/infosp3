@@ -14,7 +14,15 @@
 
   <script src="./javascripts/popper.min.js"></script>
   <script src="./javascripts/jquery-3.5.1.min.js"></script>
+  <script src="./socket/socket.io.min.js"></script>
   <script>
+  $(document).ready(()=>{
+    socket = io(`http://pcp.sp3.gob.ve:3001`);
+    socket.on("connect", ()=>{
+        console.log("Conectados al Servidor Realtime...");
+    });
+  })
+
   $("#btnEliminar").on("click", ()=>{
     $("#status").show();
     $("#btnEliminar").prop("disabled", true);
@@ -23,16 +31,17 @@
         url: `./iio/${idIIO}`,
         type: "DELETE",
         success: function(resp){
-          console.log(resp)
             if(!resp.error){
                 if(resp.data.n === 0){
                     alert("El IIO con el ID " + idIIO + " no existe.");
                     $("#btnEliminar").prop("disabled", false);
                     $("#status").hide();
+                    
                 }else{
                     alert("IIO " + idIIO + "Eliminada con éxito");
                     $("#btnEliminar").prop("disabled", false);
                     $("#status").hide();
+                    socket.emit("delete_iio", idIIO);
                 }
             }else{
                 alert("Error al intentar eliminar la IIO");
