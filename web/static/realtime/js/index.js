@@ -25,8 +25,6 @@ var opcionActiva = 1;
 var rangoActivo = [];
 var tituloActivo;
 
-var chart;
-
 window.iioArray = [];
 
 var finCarga = false;
@@ -207,14 +205,14 @@ var renderIIO = (arrIIO, isRT=false)=>{
                     var iio_html = `
                     <div class="iio iioelement">
                         <div class="wrap-content">
-                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i>` : ""} </div>
+                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${iio.aprobado ?  '<i class="fas fa-check-circle text-sucess"></i>': '<i class="fas fa-times-circle text-danger"></i>'} ${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i>` : ""} </div>
                             <div class="row">
                                 <div class="${iio.isimage ? 'col-8' : "col-12"}">
                                     <div class="texto-iio"><span>${iio.descriptiontxt}</span></div>
                                 </div>
                             </div>
                             <div class="iio-footer" style="background-color: ${cfg_tie.color} !important">
-                                <div class="tag-ubicacion">REDI ${key_redi[iio.zodi_name.toLowerCase()] + " - " + iio.zodi_name.toUpperCase() + " - " + iio.adi_name.toUpperCase()} <span class="float-right tag-tiempo">${gfh(iio.disposetime)}</span> ${window.is_supervisor ? `<span class="float-right">${iio.nickname.toUpperCase() + "&nbsp&nbsp-&nbsp&nbsp"}</span>` : ""}</div>
+                                <div class="tag-ubicacion">REDI ${key_redi[iio.zodi_name.toLowerCase()] + " - " + iio.zodi_name.toUpperCase() + " - " + iio.adi_name.toUpperCase()} <span class="float-right tag-tiempo">${gfh(iio.disposetime)}</span> ${window.is_supervisor ? `<span class="float-right">${"#" + iio.id + " - " + iio.nickname.toUpperCase() + "&nbsp&nbsp-&nbsp&nbsp"}</span>` : ""}</div>
                             </div>
                         </div>
                     </div>
@@ -242,7 +240,7 @@ var renderIIO = (arrIIO, isRT=false)=>{
                     finCarga = true;
                     $("#loader").addClass("oculto");
                 }
-            });
+        });
         }catch(err){
             console.log("Error:", err);
         }
@@ -251,6 +249,11 @@ var renderIIO = (arrIIO, isRT=false)=>{
 
 var cargarIIO = (arrIIO, opciones={titulo_map:hoy})=>{
     arrIIO.reverse();
+
+    //QUITAR LAS NO APROBADAS
+    if (!window.is_supervisor){
+        arrIIO = arrIIO.filter(IIO=>IIO.aprobado);
+    }
 
     //APLICAR FILTROS
     if (filtrosZodi.length > 0){
@@ -371,7 +374,42 @@ var cargarIIO = (arrIIO, opciones={titulo_map:hoy})=>{
         tem_data.push(objTemp);
     }
 
+    // Themes begin
+    am4core.useTheme(am4themes_animated);
+    am4core.useTheme(am4themes_moonrisekingdom);
+    // Themes end
 
+    var chart = am4core.create("st_top_tie", am4charts.XYChart);
+    chart.padding(10, 20, 10, 10);
+
+    var categoryAxis = chart.yAxes.push(new am4charts.CategoryAxis());
+    categoryAxis.renderer.grid.template.location = 0;
+    categoryAxis.dataFields.category = "tie";
+    categoryAxis.renderer.minGridDistance = 1;
+    categoryAxis.renderer.inversed = true;
+    categoryAxis.renderer.grid.template.disabled = true;
+
+    var valueAxis = chart.xAxes.push(new am4charts.ValueAxis());
+    valueAxis.min = 0;
+
+    var series = chart.series.push(new am4charts.ColumnSeries());
+    series.dataFields.categoryY = "tie";
+    series.dataFields.valueX = "cant";
+    series.tooltipText = "{valueX.value}"
+    series.columns.template.strokeOpacity = 0;
+    series.columns.template.column.cornerRadiusBottomRight = 5;
+    series.columns.template.column.cornerRadiusTopRight = 5;
+
+    var labelBullet = series.bullets.push(new am4charts.LabelBullet())
+    labelBullet.label.horizontalCenter = "left";
+    labelBullet.label.dx = 10;
+    labelBullet.label.text = "{values.valueX.workingValue.formatNumber('#as')}";
+    labelBullet.locationX = 0;
+
+    // as by default columns of the same series are of the same color, we add adapter which takes colors from chart.colors color set
+    series.columns.template.adapter.add("fill", function(fill, target){
+        return chart.colors.getIndex(target.dataItem.index);
+    });
 
     categoryAxis.sortBySeries = series;
 
@@ -444,44 +482,6 @@ $(document).ready(function () {
     });
 
     limpiarStorage();
-
-    chart = am4core.create("st_top_tie", am4charts.XYChart);
-
-    // Themes begin
-    am4core.useTheme(am4themes_animated);
-    am4core.useTheme(am4themes_moonrisekingdom);
-    // Themes end
-
-    chart.padding(10, 50, 10, 10);
-
-    var categoryAxis = chart.yAxes.push(new am4charts.CategoryAxis());
-    categoryAxis.renderer.grid.template.location = 0;
-    categoryAxis.dataFields.category = "tie";
-    categoryAxis.renderer.minGridDistance = 1;
-    categoryAxis.renderer.inversed = true;
-    categoryAxis.renderer.grid.template.disabled = true;
-
-    var valueAxis = chart.xAxes.push(new am4charts.ValueAxis());
-    valueAxis.min = 0;
-
-    var series = chart.series.push(new am4charts.ColumnSeries());
-    series.dataFields.categoryY = "tie";
-    series.dataFields.valueX = "cant";
-    series.tooltipText = "{valueX.value}"
-    series.columns.template.strokeOpacity = 0;
-    series.columns.template.column.cornerRadiusBottomRight = 5;
-    series.columns.template.column.cornerRadiusTopRight = 5;
-
-    var labelBullet = series.bullets.push(new am4charts.LabelBullet())
-    labelBullet.label.horizontalCenter = "left";
-    labelBullet.label.dx = 10;
-    labelBullet.label.text = "{values.valueX.workingValue.formatNumber('#as')}";
-    labelBullet.locationX = 0;
-
-    // as by default columns of the same series are of the same color, we add adapter which takes colors from chart.colors color set
-    series.columns.template.adapter.add("fill", function(fill, target){
-        return chart.colors.getIndex(target.dataItem.index);
-    });
 
     socket = io(`${window.servidorNodeapi}`);
     document.addEventListener('click', function enableNoSleep() {
@@ -562,14 +562,14 @@ $(document).ready(function () {
                     var iio_html = `
                     <div class="iio iioelement">
                         <div class="wrap-content">
-                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i>` : ""} </div>
+                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${iio.aprobado ?  '<i class="fas fa-check-circle text-sucess"></i>': '<i class="fas fa-times-circle text-danger"></i>'} ${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i>` : ""} </div>
                             <div class="row">
                                 <div class="${iio.isimage ? 'col-8' : "col-12"}">
                                     <div class="texto-iio"><span>${iio.descriptiontxt}</span></div>
                                 </div>
                             </div>
                             <div class="iio-footer" style="background-color: ${cfg_tie.color} !important">
-                                <div class="tag-ubicacion">REDI ${key_redi[iio.zodi_name.toLowerCase()] + " - " + iio.zodi_name.toUpperCase() + " - " + iio.adi_name.toUpperCase()} <span class="float-right tag-tiempo">${gfh(iio.disposetime)}</span> ${window.is_supervisor ? `<span class="float-right">${iio.nickname.toUpperCase() + "&nbsp&nbsp-&nbsp&nbsp"}</span>` : ""}</div>
+                                <div class="tag-ubicacion">REDI ${key_redi[iio.zodi_name.toLowerCase()] + " - " + iio.zodi_name.toUpperCase() + " - " + iio.adi_name.toUpperCase()} <span class="float-right tag-tiempo">${gfh(iio.disposetime)}</span> ${window.is_supervisor ? `<span>${iio.id}</span> <span class="float-right">${iio.nickname.toUpperCase() + "&nbsp&nbsp-&nbsp&nbsp"}</span>` : ""}</div>
                             </div>
                         </div>
                     </div>

@@ -327,8 +327,8 @@
     </div>
 
     <!-- Modal Opciones IIO -->
-    <div class="modal fade" id="modalOpcionesIIO" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="modalOpcionesIIOLabel" aria-hidden="true">
-        <div class="modal-dialog">
+    <div class="modal fade" id="modalOpcionesIIO" data-backdrop="static" data-keyboard="false" tabindex="1" aria-labelledby="modalOpcionesIIOLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalOpcionesIIOLabel">Opciones IIO  <span id="dataM"></span></h5>
@@ -337,7 +337,50 @@
                 </button>
             </div>
             <div class="modal-body">
-                ¿Está seguro que desea eliminar esta IIO?
+                <div class="row">
+                    <div class="col-12">
+                        <div class="form-group mb-3">
+                            <label for="edit-tematica" class="form-label">Temática</label>
+                            <input type="text" class="form-control" id="edit-tematica" placeholder="">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="edit-modalidad" class="form-label">Modalidad</label>
+                            <input type="text" class="form-control" id="edit-modalidad" placeholder="">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="edit-iio" class="form-label">Información de Interés Operativo</label>
+                            <textarea class="form-control" id="edit-iio" rows="3"></textarea>
+                        </div>
+                        <hr>
+                    </div>
+                    <div class="col-12">
+                        <p><b>Ubicación</b></p>
+                        <div class="form-group mb-3">
+                            <label for="edit-redi" class="form-label">REDI</label>
+                            <input type="text" class="form-control" id="edit-redi" placeholder="REDI">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="edit-zodi" class="form-label">ZODI</label>
+                            <input type="text" class="form-control" id="edit-zodi" placeholder="ZODI">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="edit-adi" class="form-label">ADI</label>
+                            <input type="text" class="form-control" id="edit-adi" placeholder="ADI">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="edit-parroquia" class="form-label">PARROQUIA</label>
+                            <input type="text" class="form-control" id="edit-parroquia" placeholder="PARROQUIA">
+                        </div>2
+                        <hr>
+                    </div>
+                    <div class="col-12">
+                        <p><b>Opciones</b></p>
+                        <button type="button" class="btn btn-success" id="edit-btn-ocultar">Ocultar</button>
+                        <button type="button" class="btn btn-success" id="edit-btn-aprobar">Aprobar</button>
+                        <button type="button" class="btn btn-primary" id="edit-btn-editar">Editar</button>
+                        <button type="button" class="btn btn-danger" id="edit-btn-eliminar" data-toggle="modal" data-target="#modalDelete">Eliminar</button>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
