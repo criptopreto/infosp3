@@ -205,7 +205,7 @@ var renderIIO = (arrIIO, isRT=false)=>{
                     var iio_html = `
                     <div class="iio iioelement">
                         <div class="wrap-content">
-                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${iio.aprobado ?  '<i class="fas fa-check-circle text-sucess"></i>': '<i class="fas fa-times-circle text-danger"></i>'} ${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i>` : ""} </div>
+                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${window.is_supervisor ? iio.aprobado ? '<i class="fas fa-check-circle text-sucess"></i>': '<i class="fas fa-times-circle text-danger"></i>' : ''} ${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i>` : ""} </div>
                             <div class="row">
                                 <div class="${iio.isimage ? 'col-8' : "col-12"}">
                                     <div class="texto-iio"><span>${iio.descriptiontxt}</span></div>
@@ -251,10 +251,11 @@ var cargarIIO = (arrIIO, opciones={titulo_map:hoy})=>{
     arrIIO.reverse();
 
     //QUITAR LAS NO APROBADAS
+    /*
     if (!window.is_supervisor){
         arrIIO = arrIIO.filter(IIO=>IIO.aprobado);
     }
-
+    */
     //APLICAR FILTROS
     if (filtrosZodi.length > 0){
         arrIIO = arrIIO.filter(IIO=>filtrosZodi.includes(IIO.zodi_name));
@@ -562,7 +563,7 @@ $(document).ready(function () {
                     var iio_html = `
                     <div class="iio iioelement">
                         <div class="wrap-content">
-                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${iio.aprobado ?  '<i class="fas fa-check-circle text-sucess"></i>': '<i class="fas fa-times-circle text-danger"></i>'} ${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i>` : ""} </div>
+                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${window.is_supervisor ? iio.aprobado ? '<i class="fas fa-check-circle text-sucess"></i>': '<i class="fas fa-times-circle text-danger"></i>' : ''} ${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i>` : ""} </div>
                             <div class="row">
                                 <div class="${iio.isimage ? 'col-8' : "col-12"}">
                                     <div class="texto-iio"><span>${iio.descriptiontxt}</span></div>
@@ -707,6 +708,11 @@ $(document).ready(function () {
     socket.on("n_iio", (data)=>{
         if(is_realtime){
             iiodb.iio.bulkPut(data).then(()=>{
+                /*
+                if (!window.is_supervisor){
+                    data = data.filter(IIO=>IIO.aprobado);
+                }
+                */
                 renderizarIIO(data, true);
             }).catch(err=>{
                 console.log("ERROR NUEVA IIO", err);
