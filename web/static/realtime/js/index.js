@@ -198,14 +198,14 @@ var renderIIO = (arrIIO, isRT=false)=>{
             arrIIO.map((iio, key)=>{
                 if(key < opcLoadIIO.limActual && key >= opcLoadIIO.numActual && finJornada === false && !finCarga && idAnterior !== iio.id){
                     idAnterior = iio.id;
-                    var log = {
+                    /*var log = {
                         limiteActual: opcLoadIIO.limActual,
                         numeroActual: opcLoadIIO.numActual,
                         finJornada: finJornada,
                         finCarga: finCarga,
                         id: iio.id
                     }
-                    console.table(log)
+                    console.table(log)*/
                     var gfh = tiempo => {
                         fecha = moment(tiempo).format("L");
                         hora = moment(tiempo).format("LT");
