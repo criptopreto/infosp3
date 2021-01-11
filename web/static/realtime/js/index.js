@@ -25,6 +25,8 @@ var opcionActiva = 1;
 var rangoActivo = [];
 var tituloActivo;
 
+var idAnterior = 0; //ID para evitar que una IIO se renderice 2 veces.
+
 window.iioArray = [];
 
 var finCarga = false;
@@ -194,7 +196,16 @@ var renderIIO = (arrIIO, isRT=false)=>{
         try{
             var finJornada = false;
             arrIIO.map((iio, key)=>{
-                if(key < opcLoadIIO.limActual && key >= opcLoadIIO.numActual && finJornada === false && !finCarga){
+                if(key < opcLoadIIO.limActual && key >= opcLoadIIO.numActual && finJornada === false && !finCarga && idAnterior !== iio.id){
+                    idAnterior = iio.id;
+                    var log = {
+                        limiteActual: opcLoadIIO.limActual,
+                        numeroActual: opcLoadIIO.numActual,
+                        finJornada: finJornada,
+                        finCarga: finCarga,
+                        id: iio.id
+                    }
+                    console.table(log)
                     var gfh = tiempo => {
                         fecha = moment(tiempo).format("L");
                         hora = moment(tiempo).format("LT");
