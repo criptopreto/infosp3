@@ -131,7 +131,7 @@ var vaciarIIOS = ()=>{
 }
 
 iiodb.version(1).stores({
-    iio: '&id,area,descriptiontxt,createtime,disposetime,tematica,subcategory,category,regionid,name,username,nickname,zodi_name,adi_name,parrish_name,priorizado,confirmado,aprobado,allowtime,editmode,isimage'
+    iio: '&id,area,createtime,disposetime,tematica,subcategory,category,regionid,name,username,nickname,zodi_name,adi_name,parrish_name,priorizado,confirmado,aprobado,allowtime,editmode,isimage'
 });
 
 function addinfo(id){
@@ -139,8 +139,9 @@ function addinfo(id){
     LS.setItem("id_iio_delete", id);
 };
 
-function deleteiio(){
+async function deleteiio(){
     var idIIO = LS.getItem('id_iio_delete');
+    $("#modalDelete").modal("hide");
     $.ajax({
         url: `${window.servidorNodeapi}/iio/${idIIO}`,
         type: "DELETE",
@@ -214,9 +215,9 @@ var renderIIO = (arrIIO, isRT=false)=>{
                     opcLoadIIO.numActual = key;
                     cfg_tie = key_tie[iio.tematica];
                     var iio_html = `
-                    <div class="iio iioelement">
+                    <div id="iio-${iio.id}" class="iio iioelement">
                         <div class="wrap-content">
-                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${window.is_supervisor ? iio.aprobado ? '<i class="fas fa-check-circle text-sucess"></i>': '<i class="fas fa-times-circle text-danger"></i>' : ''} ${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i>` : ""} </div>
+                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${window.is_supervisor ? iio.aprobado ? '<i class="fas fa-check-circle text-sucess"></i>': '<i class="fas fa-times-circle text-danger"></i>' : ''} ${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<span onclick='javascript:addinfo(${iio.id})'><i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i></span>` : ""} </div>
                             <div class="row">
                                 <div class="${iio.isimage ? 'col-8' : "col-12"}">
                                     <div class="texto-iio"><span>${iio.descriptiontxt}</span></div>
@@ -474,6 +475,10 @@ function aplicarFiltro() {
 }
 
 $(document).ready(function () {
+    setTimeout(()=>{
+        alert("Bienvenido");
+    }, 1)
+
     $('#modalRangoFecha').on('show.bs.modal', function (event) {
         $("#dateTo").val("");
         $("#dateFrom").val("");
@@ -714,6 +719,15 @@ $(document).ready(function () {
 
     socket.on("s_delete_iio", (sidIIO)=>{
         console.log("Orden de eliminar la IIO", sidIIO);
+        $("#iio-" + idIIO).remove();
+        $("#modalOpcionesIIO").modal("hide");
+        await iiodb.iio.delete(parseInt(idIIO), result=>{
+            console.log(result);
+        }).then(()=>{
+            console.log("Eliminado con exito");
+        }).catch(err=>{
+            console.error("Error: ", err);
+        });
     });
 
     socket.on("n_iio", (data)=>{
