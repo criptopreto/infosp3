@@ -719,9 +719,9 @@ $(document).ready(function () {
 
     socket.on("s_delete_iio", async sidIIO=>{
         console.log("Orden de eliminar la IIO", sidIIO);
-        $("#iio-" + idIIO).remove();
+        $("#iio-" + sidIIO).remove();
         $("#modalOpcionesIIO").modal("hide");
-        await iiodb.iio.delete(parseInt(idIIO), result=>{
+        await iiodb.iio.delete(parseInt(sidIIO), result=>{
             console.log(result);
         }).then(()=>{
             console.log("Eliminado con exito");
