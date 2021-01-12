@@ -717,7 +717,7 @@ $(document).ready(function () {
     socket.on("c_iio", (data)=>{
     });
 
-    socket.on("s_delete_iio", (sidIIO)=>{
+    socket.on("s_delete_iio", async sidIIO=>{
         console.log("Orden de eliminar la IIO", sidIIO);
         $("#iio-" + idIIO).remove();
         $("#modalOpcionesIIO").modal("hide");
