@@ -475,10 +475,6 @@ function aplicarFiltro() {
 }
 
 $(document).ready(function () {
-    setTimeout(()=>{
-        alert("Bienvenido");
-    }, 1)
-
     $('#modalRangoFecha').on('show.bs.modal', function (event) {
         $("#dateTo").val("");
         $("#dateFrom").val("");
