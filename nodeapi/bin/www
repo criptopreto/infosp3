@@ -77,7 +77,7 @@ io.on('connection', (socket)=>{
 
   socket.on("delete_iio", idIIO=>{
     console.log("solicitud de eliminación de IIO");
-    socket.emit("s_delete_iio", idIIO);
+    myEmisor.emit("e_delete_iio", idIIO);
   });
 
   socket.on("get_iio_init", ()=>{
@@ -95,6 +95,10 @@ io.on('connection', (socket)=>{
     console.log("Emitiendo nueva IIO", datos);
     socket.emit("n_iio", datos)
   });
+
+  myEmisor.on("e_delete_iio", idIIO=>{
+    socket.emit("s_delete_iio", idIIO);
+  })
 });
 
 setInterval(()=>{
