@@ -577,9 +577,9 @@ $(document).ready(function () {
                 if(key<500){
                     cfg_tie = key_tie[iio.tematica];
                     var iio_html = `
-                    <div class="iio iioelement">
+                    <div id="iio-${iio.id}" class="iio iioelement">
                         <div class="wrap-content">
-                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${window.is_supervisor ? iio.aprobado ? '<i class="fas fa-check-circle text-sucess"></i>': '<i class="fas fa-times-circle text-danger"></i>' : ''} ${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i>` : ""} </div>
+                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${window.is_supervisor ? iio.aprobado ? '<i class="fas fa-check-circle text-sucess"></i>': '<i class="fas fa-times-circle text-danger"></i>' : ''} ${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<span onclick='javascript:addinfo(${iio.id})'><i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i></span>` : ""} </div>
                             <div class="row">
                                 <div class="${iio.isimage ? 'col-8' : "col-12"}">
                                     <div class="texto-iio"><span>${iio.descriptiontxt}</span></div>
