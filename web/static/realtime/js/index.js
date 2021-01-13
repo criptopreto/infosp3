@@ -168,6 +168,7 @@ async function aprobariio(){
      $.ajax({
          url: `${window.servidorNodeapi}/aprobar/${idIIO}`,
          type: "POST",
+         data: ""
      })
 }
 
