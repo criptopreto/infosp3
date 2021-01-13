@@ -140,14 +140,12 @@ function addinfo(id){
 };
 
 async function deleteiio(){
-    console.log("presionado");
     var idIIO = LS.getItem('id_iio_delete');
     $("#modalDelete").modal("hide");
     $.ajax({
         url: `${window.servidorNodeapi}/iio/${idIIO}`,
         type: "DELETE",
         success: function(resp){
-            console.log("respuesta");
             if(!resp.error){
                 if(resp.data.n === 0){
                     console.log("¡El elemento no existe!");
@@ -164,6 +162,14 @@ async function deleteiio(){
         }
     });
 };
+
+async function aprobariio(){
+    var idIIO = LS.getItem('id_iio_delete');
+     $.ajax({
+         url: `${window.servidorNodeapi}/aprobar/${idIIO}`,
+         type: "POST",
+     })
+}
 
 async function setRangoFecha(){
     var fechaInicio = LS.getItem("rango_fecha_inicio");
