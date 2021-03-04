@@ -469,19 +469,24 @@ function limpiarStorage() {
     LS.removeItem("range_fecha_final");
 }
 
-async function aplicarOpcion(rangoTiempo=[], titulo_map) {
+async function aplicarOpcion(rangoTiempo=[], titulo_map, opcionActiva) {
     vaciarIIOS();
     finCarga = false;
     opcLoadIIO.limActual = 10;
     opcLoadIIO.numActual = 0;
     var iio_rango;
+    
 
     if(rangoTiempo.length < 2){
-        is_realtime = true;
         iio_rango = await iiodb.iio.where('disposetime').above(rangoTiempo[0]).toArray();
     }else{
-        is_realtime = false;
         iio_rango = await iiodb.iio.where('disposetime').between(rangoTiempo[0], rangoTiempo[1]).toArray();
+    }
+
+    if(opcionActiva === 1){
+        is_realtime = true;
+    }else{
+        is_realtime = false;
     }
     cargarIIO(iio_rango, {titulo_map: titulo_map});
 }
@@ -653,8 +658,14 @@ $(document).ready(function () {
                 case 'realtime':
                     opcionActiva = 1;
                     nuevasiio = 0;
+                    var today = new Date();
+                    var hace1dia = new Date(today.getTime());
+                    hace1dia.setDate(today.getDate() - 1);
+                    
+                    hace1 = new Date(hace1dia.getFullYear(), hace1dia.getMonth(), hace1dia.getDate(), 21);
                     // Hoy
-                    rangoActivo.push(moment(new Date()).format("YYYY-MM-DD"));
+                    rangoActivo.push(moment(hace1).format("YYYY-MM-DDTHH:mm:ss.000"));
+                    rangoActivo.push(moment(new Date()).add(4, "h").format("YYYY-MM-DDTHH:mm:ss.000"));
                     tituloActivo = moment(new Date()).format("YYYY-MM-DD");
                     break;
                 case 'ayer':
@@ -700,7 +711,7 @@ $(document).ready(function () {
                     tituloActivo = moment(hace31).format("YYYY-MM-DD") + " - " + moment(toMorrow).format("YYYY-MM-DD");
                     break;
             }
-            aplicarOpcion(rangoActivo, tituloActivo);
+            aplicarOpcion(rangoActivo, tituloActivo, opcionActiva);
         }
     });
 
@@ -712,8 +723,13 @@ $(document).ready(function () {
                 }
             });
             m_hoy = moment(new Date()).format("YYYY-MM-DD");
+            var today = new Date();
+            var hace1dia = new Date(today.getTime());
+            hace1dia.setDate(today.getDate() - 1);
+            
+            hace1 = new Date(hace1dia.getFullYear(), hace1dia.getMonth(), hace1dia.getDate(), 21);
             return iiodb.iio.bulkPut(arr_iio).then(()=>{
-                    return iiodb.iio.where('disposetime').above(m_hoy);
+                    return iiodb.iio.where('disposetime').between(moment(hace1).format("YYYY-MM-DDTHH:mm:ss.000"), moment(new Date()).add(4, "h").format("YYYY-MM-DDTHH:mm:ss.000"));
                 }).then(iios=>{
                     return iios;
                 }).catch(err=>{
@@ -732,10 +748,15 @@ $(document).ready(function () {
             opcionActiva = 1;
             nuevasiio = 0;
             // Hoy
-            rangoActivo.push(moment(new Date()).format("YYYY-MM-DD"));
+            var today = new Date();
+            var hace1dia = new Date(today.getTime());
+            hace1dia.setDate(today.getDate() - 1);
+            
+            hace1 = new Date(hace1dia.getFullYear(), hace1dia.getMonth(), hace1dia.getDate(), 21);
+            rangoActivo.push(moment(hace1).format("YYYY-MM-DDTHH:mm:ss.000"));
+            rangoActivo.push(moment(new Date()).add(4, "h").format("YYYY-MM-DDTHH:mm:ss.000"));
             tituloActivo = moment(new Date()).format("YYYY-MM-DD");
             iio.toArray(riio=>{
-                
                 cargarIIO(riio);
             })
         }
