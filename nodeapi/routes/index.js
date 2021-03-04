@@ -354,6 +354,23 @@ router.delete("/iio/:id", async(req, res)=>{
   })
 });
 
+router.get("/aprobar/:id", async(req, res)=>{
+  var idIIO = parseInt(req.params.id);
+  iio.IIO.findOneAndUpdate({id: idIIO}, {aprobado: true, aprobadotime: new Date()}).then(async msg=>{
+    res.json({error: false, data: msg});
+  }).catch(err=>{
+    res.json({error: true, data: err});
+  });
+});
+
+router.get("/aprobarall", async(req, res)=>{
+  iio.IIO.updateMany({disposetime: {$gte: '2021-01-19'}},{aprobado: false}).then(iios=>{
+    res.json({error: false, cantidad: iios});
+  }).catch(err=>{
+    res.json({error: true, error: err});
+  });
+});
+
 router.get("/exploradores_tabla", async (req, res)=>{
   var agentes = await oracledb.getConnection(cns, async (err, cn)=>{
     if(error(err, cn)==-1){return}

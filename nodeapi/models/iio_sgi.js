@@ -20,6 +20,7 @@ const IIO = new Schema({
     priorizado: {type: Boolean, default: false},
     confirmado: {type: Boolean, default: false},
     aprobado: {type: Boolean, default: false},
+    aprobadotime: {type: Date},
     allowtime: {type: Date},
     editmode: {type: Boolean, default: false},
     isimage: {type: Boolean, default: false}

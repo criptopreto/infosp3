@@ -356,7 +356,7 @@
                     <div class="col-12">
                         <p><b>Opciones</b></p>
                         <button type="button" class="btn btn-success" id="edit-btn-ocultar">Ocultar</button>
-                        <button type="button" class="btn btn-success" id="edit-btn-aprobar">Aprobar</button>
+                        <button type="button" class="btn btn-success" id="edit-btn-aprobar" data-toggle="modal" data-target="modalAprobar">Aprobar</button>
                         <button type="button" class="btn btn-primary" id="edit-btn-editar">Editar</button>
                         <button type="button" class="btn btn-danger" id="edit-btn-eliminar" data-toggle="modal" data-target="#modalDelete">Eliminar</button>
                     </div>
@@ -442,6 +442,26 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                 <button type="button" onclick="javascript:deleteiio()" class="btn btn-danger">Aceptar</button>
+            </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Aprobar -->
+    <div class="modal" id="modalAprobar" data-keyboard="false" data-backdrop="static" tabindex="-1" aria-labelledby="modalAprobarLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalAprobarLabel">Aprobar IIO <span id="dataAP"></span></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                ¿Está seguro que desea <b>Aprobar</b> esta IIO?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" onclick="javascript:aprobariio()" class="btn btn-success" data-dismiss="modal">Aceptar</button>
             </div>
             </div>
         </div>

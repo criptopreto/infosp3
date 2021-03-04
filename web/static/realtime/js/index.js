@@ -136,6 +136,7 @@ iiodb.version(1).stores({
 
 function addinfo(id){
     $("#dataM").html(id);
+    $("#dataAP").html(id);
     LS.setItem("id_iio_delete", id);
 };
 
@@ -167,9 +168,27 @@ async function aprobariio(){
     var idIIO = LS.getItem('id_iio_delete');
      $.ajax({
          url: `${window.servidorNodeapi}/aprobar/${idIIO}`,
-         type: "POST",
-         data: ""
-     })
+         type: "GET",
+         success: (resp)=>{
+             if(!resp.error){
+                 if(resp.data.n === 0){
+                     console.error("El elemento no existe");
+                 }else{
+                    $(`#ap-iio-${idIIO}`).removeClass("text-danger");
+                    $(`#ap-iio-${idIIO}`).removeClass("fa-times-circle");
+                    $(`#ap-iio-${idIIO}`).addClass("fa-check-circle");
+                    $(`#ap-iio-${idIIO}`).addClass("text-success");
+                    $(`#btn-ap-${idIIO}`).hide();
+                    console.log("IIO Aprobada con exito");
+                 }
+             }else{
+                 console.error("Error al intentar aprobar la IIO", resp);
+             }
+         },
+         error: (err)=>{
+             console.error("Error al intentar aprobar la IIO: ", err);
+         }
+     });
 }
 
 async function setRangoFecha(){
@@ -223,10 +242,11 @@ var renderIIO = (arrIIO, isRT=false)=>{
                     }
                     opcLoadIIO.numActual = key;
                     cfg_tie = key_tie[iio.tematica];
+                    
                     var iio_html = `
                     <div id="iio-${iio.id}" class="iio iioelement">
                         <div class="wrap-content">
-                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${window.is_supervisor ? iio.aprobado ? '<i class="fas fa-check-circle text-sucess"></i>': '<i class="fas fa-times-circle text-danger"></i>' : ''} ${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<span onclick='javascript:addinfo(${iio.id})'><i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i></span>` : ""} </div>
+                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${window.is_supervisor ? iio.aprobado ? '<i class="fas fa-check-circle text-success"></i>': `<i class="fas fa-times-circle text-danger" id="ap-iio-${iio.id}"></i>` : ''} ${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<span onclick='javascript:addinfo(${iio.id})'><i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i>${!iio.aprobado ? `<i onclick="javascript:addinfo(${iio.id})" class="fas fa-check-square float-right mr-2 icon-select text-success" data-toggle="modal" data-target="#modalAprobar" id="btn-ap-${iio.id}"></i>` : ''}</span>` : ""} </div>
                             <div class="row">
                                 <div class="${iio.isimage ? 'col-8' : "col-12"}">
                                     <div class="texto-iio"><span>${iio.descriptiontxt}</span></div>
@@ -249,6 +269,7 @@ var renderIIO = (arrIIO, isRT=false)=>{
                             updateNotifyIIO(buffer_iio.length);
                         }else{
                             $("#iios-content").prepend(iio_html)
+                            $('[data-toggle="tooltip"]').tooltip();
                         }
                     }else{
                         $("#iios-content").append(iio_html)
@@ -584,7 +605,7 @@ $(document).ready(function () {
                     var iio_html = `
                     <div id="iio-${iio.id}" class="iio iioelement">
                         <div class="wrap-content">
-                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${window.is_supervisor ? iio.aprobado ? '<i class="fas fa-check-circle text-sucess"></i>': '<i class="fas fa-times-circle text-danger"></i>' : ''} ${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<span onclick='javascript:addinfo(${iio.id})'><i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i></span>` : ""} </div>
+                            <div class="iio-header" style="border-bottom: 3px dashed ${cfg_tie.color};">${window.is_supervisor ? iio.aprobado ? '<i class="fas fa-check-circle text-success"></i>': '<i class="fas fa-times-circle text-danger"></i>' : ''} ${iio.priorizado ? '<i class="fas fa-exclamation-triangle text-danger"></i>': ''} <span class="${iio.priorizado ? 'title-iio-alert':'title-iio'}">${cfg_tie.tie + " - " + iio.subcategory.toUpperCase()}</span> ${window.is_supervisor ? `<span onclick='javascript:addinfo(${iio.id})'><i class="fas fa-cog float-right mr-3 icon-select" data-toggle="modal" data-target="#modalOpcionesIIO"></i>${!iio.aprobado ? `<i onclick="javascript:addinfo(${iio.id})" class="fas fa-check-square float-right mr-2 icon-select text-success" data-toggle="modal" data-target="#modalAprobar"></i>` : ''}</span>` : ""} </div>
                             <div class="row">
                                 <div class="${iio.isimage ? 'col-8' : "col-12"}">
                                     <div class="texto-iio"><span>${iio.descriptiontxt}</span></div>
