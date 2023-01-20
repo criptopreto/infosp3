@@ -342,12 +342,12 @@ var cargarIIO = (arrIIO, opciones={titulo_map:hoy})=>{
                 dataClasses: [{
                     to: 10,
                     name: '<10 | Deficiente',
-                    color: '#5dade2'
+                    color: '#7552f4'
                 }, {
                     from: 10,
                     to: 20,
                     name: '10-20 | Regular',
-                    color: '#f4d03f'
+                    color: '#f2b305'
                 }, {
                     from: 20,
                     to: 30,

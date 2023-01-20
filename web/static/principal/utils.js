@@ -3,9 +3,9 @@
 window.chartColors = {
 	red: 'rgb(255, 99, 132)', //red
 	orange: 'rgb(255, 159, 64)', //orange
-	yellow: 'rgb(255, 205, 86)', //yellow
+	yellow: 'rgb(242, 179, 69)', //yellow
 	green: 'rgb(80, 178, 38)', //green
-	blue: 'rgb(54, 162, 235)', //blue
+	blue: 'rgb(109, 113, 268)', //blue
 	purple: 'rgb(153, 102, 255)', //purple
 	grey: 'rgb(201, 203, 207)' //grey
 };
