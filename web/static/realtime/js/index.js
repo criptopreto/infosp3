@@ -29,6 +29,8 @@ var idAnterior = 0; //ID para evitar que una IIO se renderice 2 veces.
 
 window.iioArray = [];
 
+console.log("Caracas.")
+
 var finCarga = false;
 
 var zodi_tie = [
