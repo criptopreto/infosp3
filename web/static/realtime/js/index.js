@@ -63,7 +63,7 @@ var zodi_tie = [
 ]
 
 var key_tie = {
-    "aseguramiento de los principales dirigentes de la revolución y c/r": {
+    "aseguramiento del pdte de la rbv y c/j de la fanb, dirigentes y cuadros de direcc de la rbv y pio": {
         tie: "TIE 1",
         color: "#64000038",
     },
